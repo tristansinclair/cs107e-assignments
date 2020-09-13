@@ -19,3 +19,5 @@ clean:
 # Check for clean build.
 check:
 	@! make clean all 2>&1 > /dev/null | grep 'error\|warning'
+
+MY_MODULES := larson.o
