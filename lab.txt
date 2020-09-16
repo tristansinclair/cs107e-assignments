@@ -1,7 +1,5 @@
-Hi! Replace EVERYTHING in this file with one of the following choices depending
-on whether you've received your lab kit or not. 
+Hi! Replace EVERYTHING in this file with Your lab information in the following format:
 
-Your submitted file should contain only and exactly one of these lines:
+<assigned_lab_day> <assigned_lab_start_time>-<assigned_lab_end_time>
 
-I have my kit.
-I don't have my kit.
+Your submitted file should exclusively contain your lab information, none of this boiler-plate text.
