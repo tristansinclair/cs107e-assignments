@@ -1,11 +1,11 @@
 /*
  * LARSON SCANNER
  *
- * Currently this code is the blink code copied from lab 1.
- *
- * Modify the code to implement the larson scanner for assignment 1.
- *
- * Make sure to use GPIO pins 20-23 (or 20-27) for your scanner.
+ * ARM Assembly Code for Raspberry Pi 1A+
+ * Controls LEDs connected to GPIO Pins 20-27
+ * LED's light up in a "Larson Scanner" pattern
+ * written by: Tristan Sinclair 9/29/20
+ * for: CS107E
  */
 // delays are used for controlling brightness
 .equ DELAY, 0x150
