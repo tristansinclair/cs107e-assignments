@@ -8,7 +8,7 @@
  * Make sure to use GPIO pins 20-23 (or 20-27) for your scanner.
  */
 
-.equ DELAY, 0x050000
+.equ DELAY, 0x100000
 
 // configure GPIO 20, 21, 22, 23 for output
 ldr r0, FSEL2
@@ -39,12 +39,6 @@ wait1:
 // set GPIO 20 low
 ldr r0, CLR0
 str r1, [r0]
-
-// delay
-mov r2, #DELAY
-wait2:
-    subs r2, #1
-    bne wait2
 
 cmp r3, r4
   beq switch
