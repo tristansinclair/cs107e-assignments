@@ -19,7 +19,7 @@ add r1, r1, #0x0049
 str r1, [r0]
 
 // prep register to hold GPIO on/off switch
-mov r1, #(1<<20)
+mov r1, #(7<<18)
 
 // counter: used for location
 mov r3, #0
