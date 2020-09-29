@@ -8,25 +8,27 @@
  * Make sure to use GPIO pins 20-23 (or 20-27) for your scanner.
  */
 
-.equ DELAY, 0x050000
+.equ DELAY, 0x110000
+.equ DELAY2, 0x200
+.equ PWMDELAY, 0x20
 
-// configure GPIO 20, 21, 22, 23 for output
+// configure GPIO 20 - 25 for output (6 LEDS)
 ldr r0, FSEL2
 mov r1, #0x009200
 add r1, r1, #0x0049
 str r1, [r0]
 
-// Prep register to hold GPIO on/off switch
+// prep register to hold GPIO on/off switch
 mov r1, #(1<<20)
 
-// Counter
+// counter: used for location
 mov r3, #0
-// destination
-mov r4, #5
+// destination: used for number of LEDs (num = num of LEDs)
+mov r4, #7
 
 loop:
 
-// set GPIO 20 high
+// set current GPIO high
 ldr r0, SET0
 str r1, [r0]
 
@@ -36,20 +38,16 @@ wait1:
     subs r2, #1
     bne wait1
 
-// set GPIO 20 low
+// set current GPIO low
 ldr r0, CLR0
 str r1, [r0]
 
-// delay
-mov r2, #DELAY
-wait2:
-    subs r2, #1
-    bne wait2
-
+// Control Direction
 cmp r3, r4
   beq switch
   blt forward
   bgt backward
+
 b loop
 
 // Moves the LED forward
@@ -65,18 +63,19 @@ backward:
 b loop
 
 // Switches the direction
+// Change #7 to however many LEDS there are
 switch:
-  cmp r3, #5
-    subeq r4, r4, #5
-    addne r4, r4, #5
+  cmp r3, #7
+    subeq r4, r4, #7
+    addne r4, r4, #7
   beq backward
   bne forward
 
 
 
 // FSEL used for setting the function of a GPIO pin
-FSEL0: .word 0x20200000  // Address of the GPIO Function Select 0
-FSEL1: .word 0x20200004  // Address of the GPIO Function Select 1
+FSEL0: .word 0x20200000
+FSEL1: .word 0x20200004
 FSEL2: .word 0x20200008  // Address of the GPIO Function Select 2 (GPIO 20-29)
 
 // SET used for turning on a GPIO pin
