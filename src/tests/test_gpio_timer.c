@@ -1,4 +1,4 @@
-#include "assert.h"
+#include "assert_internal.h"
 #include "gpio.h"
 #include "timer.h"
 
