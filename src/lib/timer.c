@@ -3,8 +3,10 @@
 void timer_init(void) {
 }
 
+volatile unsigned int * const CLO = (unsigned int *)0x20003004;
+
 unsigned int timer_get_ticks(void) {
-    return 0;  // TODO: Your code goes here.
+    return *CLO;
 }
 
 void timer_delay_us(unsigned int usecs) {
