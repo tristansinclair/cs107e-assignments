@@ -1,5 +1,6 @@
 #include "gpio.h"
 
+// Struct to control GPIO Pins
 struct gpio
 {
     unsigned int FSEL[6];
@@ -11,7 +12,7 @@ struct gpio
     unsigned int LEV[2];
 };
 
-volatile struct gpio *gpio = (struct gpio *)0x20200000;
+volatile struct gpio *gpio = (struct gpio *)0x20200000; // Point to beginning of struct
 
 void gpio_init(void)
 {
@@ -19,13 +20,11 @@ void gpio_init(void)
 
 void gpio_set_function(unsigned int pin, unsigned int function)
 {
-    /* 
-    * Look at pin number and see which GPIO FSEL we need to configure
-    * Go to that FSEL
-    * Find location in FSEL: location = ((pin % 10) * 3)
-    * Send the function over to that location
-    */
-
+    if (pin > 54 || pin < 0)
+    {
+        return; // no need to do anything so just leave
+    }
+    
     unsigned int register_num = (pin / 10);                // which GPIO config register do we need?
     unsigned int register_data = gpio->FSEL[register_num]; // copies register data to be modified
 
@@ -40,25 +39,18 @@ void gpio_set_function(unsigned int pin, unsigned int function)
 
 unsigned int gpio_get_function(unsigned int pin)
 {
-    /* 
-    * Take pin # and go to correct GPIO FSEL
-    * location = ((pin % 10) * 3)
-    * return the 3 bits at the location
-    * mask and shift?
-    * (value & 7) >> 1
-    */
     if (pin > 54 || pin < 0)
     {
         return GPIO_INVALID_REQUEST;
     }
 
     unsigned int register_num = (pin / 10);                // which GPIO config register do we need?
-    unsigned int register_data = gpio->FSEL[register_num]; // copies register data to be inspected
+    unsigned int register_data = gpio->FSEL[register_num]; // copies to register data to be inspected
 
-    unsigned int bit_shift = (pin % 10) * 3;
+    unsigned int bit_shift = (pin % 10) * 3; // which pin we want to look at
     unsigned int bits_we_want = 7 << bit_shift;
 
-    return ((register_data & bits_we_want) >> bit_shift); // returns & of register data and the bits_we_want
+    return ((register_data & bits_we_want) >> bit_shift); // returns & of register data and the bits_we_want = the function
 }
 
 void gpio_set_input(unsigned int pin)
@@ -75,7 +67,7 @@ void gpio_write(unsigned int pin, unsigned int value)
 {
     if (pin > 54 || pin < 0)
     {
-        return;
+        return; // no need to do anything so just leave
     }
 
     unsigned int bit_location = pin % 32; // location of bit we want to manipulate
@@ -85,11 +77,11 @@ void gpio_write(unsigned int pin, unsigned int value)
 
     if (value == 0)
     {
-        gpio->CLR[register_num] = bit;
+        gpio->CLR[register_num] = bit; // off
     }
     else if (value == 1)
     {
-        gpio->SET[register_num] = bit;
+        gpio->SET[register_num] = bit; // on
     }
 }
 
@@ -103,13 +95,16 @@ unsigned int gpio_read(unsigned int pin)
     unsigned int bit_location = pin % 32; // location of bit we want to inspect
     unsigned int bit = 1 << bit_location; // creates: 000...1...000 w/ 1 at target bit
 
-    unsigned int register_num = (pin / 32); // which GPIO config register do we need?
+    unsigned int register_num = (pin / 32); // which LEV register do we need?
 
     unsigned int register_data = gpio->LEV[register_num];
 
-    if ((register_data & bit) > 0) {
+    if ((register_data & bit) > 0)
+    {
         return 1;
-    } else {
+    }
+    else
+    {
         return 0;
     }
 }

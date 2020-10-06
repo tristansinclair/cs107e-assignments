@@ -1,66 +1,41 @@
+/*
+ * clock.c
+ *
+ * C for Raspberry Pi 1A+
+ * Controls 4-digit 7-segment display
+ * GPIO Pins 10-13 digit control, GPIO Pins 20-27 segment control
+ * GPIO Pin 2 - Button input
+ * idle - starting point, nothing is happening yet
+ * count - hit the red button once, start the timer
+ * stop - hti the red button again to stop the timer
+ * reset - hit once more to return to idle
+ * 
+ * written by: Tristan Sinclair 10/5/20
+ * for: CS107E
+ */
+
+
 #include "gpio.h"
 #include "timer.h"
-
-// 0 - 0b00111111
-// 1 - 0b00000110
-// 2 - 0b01011011
-// 3 - 0b01001111
-// 4 - 0b01100110
-// 5 - 0b01101101
-// 6 - 0b01111101
-// 7 - 0b00000111
-// 8 - 0b01111111
-// 9 - 0b01100111
-// A - 0b01110111
-// B - 0b01111100
-// C - 0b00111001
-// D - 0b01011110
-// E - 0b01111001
-
-// struct Clock_Data
-// {
-//     int data[16];
-// };
-
-// struct Clock_Data;
-
-// int zero = 0b00111111;
-// int one = 0b00000110;
-// int two = 0b01011011;
-// int three = 0b01001111;
-// int four = 0b01100110;
-// int five = 0b01101101;
-// int six = 0b01111101;
-// int seven = 0b00000111;
-// int eight = 0b01111111;
-// int nine = 0b01100111;
-// int A = 0b01110111;
-// int B = 0b01111100;
-// int C = 0b00111001;
-// int D = 0b01011110;
-// int E = 0b01111001;
 
 int number_data[] = {0b00111111, 0b00000110, 0b01011011, 0b01001111, 0b01100110, 0b01101101, 0b01111101, 0b00000111,
                      0b01111111, 0b01100111, 0b01110111, 0b01111100, 0b00111001, 0b01011110, 0b01111001};
 
-// Clock_Data[0] = zero;
-// Clock_Data[1] = one;
-// Clock_Data[2] = two;
-// Clock_Data[3] = three;
-// Clock_Data[4] = four;
-
-void display_on(int num)
-{
-    gpio_set_output(num + 10);
-    gpio_write(num + 10, 1);
-}
-
+/* segment_on - turns on 1 segments of a digit */
 void segment_on(int n)
 {
     gpio_set_output(n + 20);
     gpio_write(n + 20, 1);
 }
 
+/* digit_on - turns on individual digit */
+void digit_on(int num)
+{
+    gpio_set_output(num + 10);
+    gpio_write(num + 10, 1);
+}
+
+/* number_on - used 8bit binary code to turn on corresponding display segments */
 void number_on(int n, int display)
 {
     int counter = 0;
@@ -74,10 +49,11 @@ void number_on(int n, int display)
         counter++;
         n = n >> 1;
     }
-    display_on(display);
+    digit_on(display);
 }
 
-void off(void)
+/* number_off - shuts down the entire display - to use for refresh rate */
+void number_off(void)
 {
     gpio_write(10, 0);
     gpio_write(11, 0);
@@ -93,72 +69,101 @@ void off(void)
     gpio_write(27, 0);
 }
 
-void display_time(int seconds, int minutes)
+/* button_control - controls button: once button is *released* after press, control is iterated */
+void button_control(int *button, int *control)
 {
-    for (int i = 200; i != 0; i--)
+    if (gpio_read(2) == 0) // if button is pressed
     {
-        number_on(0b00000110, 0);
-        timer_delay_us(2500);
-        off();
-        number_on(0b01011011, 1);
-        timer_delay_us(2500);
-        off();
+        *button = 1;
+    }
+    if (*button == 1 && gpio_read(2) == 1) // if button is released after being pressed
+    {
+        (*control)++;
+        *button = 0;
+        return;
     }
 }
 
-// void start_timer(int seconds, int minutes)
-// {
+/* display_time - displays minutes and seconds */
+void display_time(int *seconds, int *minutes, int *control, int *button)
+{
+    button_control(button, control); // checks for button press
 
-//     while (1)
-//     {
-//         if (seconds == 60)
-//         {
-//             seconds = 0;
-//             minutes++;
-//         }
+    if (*seconds == 60) // second to minute rollover
+    {
+        (*minutes)++;
+        *seconds = 0;
+    }
 
-//         display_time()
+    // diplays one digit at a time
+    number_on(number_data[*seconds % 10], 3);
+    timer_delay_us(2500);
+    number_off();
+    number_on(number_data[*seconds / 10], 2);
+    timer_delay_us(2500);
+    number_off();
+    number_on(number_data[*minutes % 10], 1);
+    timer_delay_us(2500);
+    number_off();
+    number_on(number_data[*minutes / 10], 0);
+    timer_delay_us(2500);
+    number_off();
+}
 
-//             display_time(seconds, minutes);
+/* start_timer - used to run the timer */
+void start_timer(int *seconds, int *minutes, int *control, int *button)
+{
+    (*seconds)++; // adds a second every iteration
 
-//         seconds++;
-//     }
-// }
+    for (int i = 100; i != 0; i--) // 2500 microseconds x 4 x 100 == 1s
+    {
+        display_time(seconds, minutes, control, button); // displays current time
+    }
+}
+
+/* reset - used to reset the timer back to idle and 0s and 0mins */
+void reset(int *seconds, int *minutes, int *control)
+{
+    *seconds = -1; // fixes slow stop if seconds starts at 0
+    *minutes = 0;
+    *control = 0;
+}
+
+/* idle - idle screen w/ no numbers displayed */
+void idle(void)
+{
+    segment_on(6);
+    digit_on(0);
+    digit_on(1);
+    digit_on(2);
+    digit_on(3);
+}
 
 void main(void)
 {
-    int seconds = 0;
+    int seconds = -1; // fixes slow stop if seconds starts at 0
     int minutes = 0;
-    bool start_stop = false;
-
-    while (start_stop = false) {
-        
-    }
-
+    int control = 0; // controls what state we are in: idle, counting, stop, reset
+    int button = 0;  // used for preventing problems w/ button sensing
 
     while (1)
     {
-        if (seconds == 60)
+        while (control == 0) // idle, ready to start from button on GPIO 2
         {
-            minutes++;
-            seconds = 0;
+            idle();
+            button_control(&button, &control);
         }
-
-        for (int i = 100; i != 0; i--)
+        while (control == 1) // timer running
         {
-            number_on(number_data[seconds % 10], 3);
-            timer_delay_us(2500);
-            off();
-            number_on(number_data[seconds / 10], 2);
-            timer_delay_us(2500);
-            off();
-            number_on(number_data[minutes % 10], 1);
-            timer_delay_us(2500);
-            off();
-            number_on(number_data[minutes / 10], 0);
-            timer_delay_us(2500);
-            off();
+            start_timer(&seconds, &minutes, &control, &button); // adds a second every iteration
         }
-        seconds++;
+        while (control == 2) // stops the timer and diplays the time (like a stop watch)
+        {
+            display_time(&seconds, &minutes, &control, &button);
+        }
+        if (control == 3) // resets the timer back to idle
+        {
+            reset(&seconds, &minutes, &control);
+        }
     }
 }
