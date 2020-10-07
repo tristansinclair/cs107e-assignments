@@ -14,7 +14,6 @@
  * for: CS107E
  */
 
-
 #include "gpio.h"
 #include "timer.h"
 
@@ -77,6 +76,16 @@ void button_control(int *button, int *control)
         *button = 1;
     }
     if (*button == 1 && gpio_read(2) == 1) // if button is released after being pressed
+    {
+        (*control)++;
+        *button = 0;
+        return;
+    }
+    if (gpio_read(3) == 0) // if button is pressed
+    {
+        *button = 1;
+    }
+    if (*button == 1 && gpio_read(3) == 1) // if button is released after being pressed
     {
         (*control)++;
         *button = 0;
@@ -146,7 +155,31 @@ void main(void)
     int control = 0; // controls what state we are in: idle, counting, stop, reset
     int button = 0;  // used for preventing problems w/ button sensing
 
-    while (1)
+    int control2 = 0; // navigate through set time
+    int button2 = 0; // sense button press
+
+    int set = 0; // switch between clock and set time
+
+    while (set == 0)
+    {
+        while (control2 == 0)
+        {
+            number_off();
+            timer_delay_ms(300);
+            seconds = 0;
+
+            for (int i = 45; i != 0; i--)
+            {
+                display_time(&seconds, &minutes, &control2, &button2);
+            }
+        }
+        while (control2 == 1)
+        {
+            
+        }
+    }
+
+    while (set == 1)
     {
         while (control == 0) // idle, ready to start from button on GPIO 2
         {
