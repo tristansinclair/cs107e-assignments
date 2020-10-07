@@ -14,12 +14,12 @@
  * for: CS107E
  */
 
-
 #include "gpio.h"
 #include "timer.h"
 
+/* Holds binary codes corresponding to numbers 0-F */
 int number_data[] = {0b00111111, 0b00000110, 0b01011011, 0b01001111, 0b01100110, 0b01101101, 0b01111101, 0b00000111,
-                     0b01111111, 0b01100111, 0b01110111, 0b01111100, 0b00111001, 0b01011110, 0b01111001};
+                     0b01111111, 0b01100111, 0b01110111, 0b01111100, 0b00111001, 0b01011110, 0b01111001, 0b01110001};
 
 /* segment_on - turns on 1 segments of a digit */
 void segment_on(int n)
@@ -85,17 +85,14 @@ void button_control(int *button, int *control)
 }
 
 /* display_time - displays minutes and seconds */
-void display_time(int *seconds, int *minutes, int *control, int *button)
+void display_time(int *seconds, int *minutes)
 {
-    button_control(button, control); // checks for button press
-
     if (*seconds == 60) // second to minute rollover
     {
         (*minutes)++;
         *seconds = 0;
     }
-
-    // diplays one digit at a time
+    // diplays one digit at a time *.01s*
     number_on(number_data[*seconds % 10], 3);
     timer_delay_us(2500);
     number_off();
@@ -117,7 +114,8 @@ void start_timer(int *seconds, int *minutes, int *control, int *button)
 
     for (int i = 100; i != 0; i--) // 2500 microseconds x 4 x 100 == 1s
     {
-        display_time(seconds, minutes, control, button); // displays current time
+        display_time(seconds, minutes);  // displays current time
+        button_control(button, control); // checks for button press
     }
 }
 
@@ -141,7 +139,7 @@ void idle(void)
 
 void main(void)
 {
-    int seconds = -1; // fixes slow stop if seconds starts at 0
+    int seconds = -1; // fixes slow stop if seconds starts at 0 and starting at 1
     int minutes = 0;
     int control = 0; // controls what state we are in: idle, counting, stop, reset
     int button = 0;  // used for preventing problems w/ button sensing
@@ -159,7 +157,8 @@ void main(void)
         }
         while (control == 2) // stops the timer and diplays the time (like a stop watch)
         {
-            display_time(&seconds, &minutes, &control, &button);
+            display_time(&seconds, &minutes);
+            button_control(&button, &control);
         }
         if (control == 3) // resets the timer back to idle
         {
