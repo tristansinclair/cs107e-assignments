@@ -3,29 +3,24 @@
  *
  * ARM Assembly Code for Raspberry Pi 1A+
  * Controls LEDs connected to GPIO Pins 20-27
- * LED's light up in a "Larson Scanner" pattern
+ * LED's light up in a BASIC "Larson Scanner" pattern
+ * (one LED at a time)
+ *
  * written by: Tristan Sinclair 9/29/20
  * for: CS107E
  */
-// delays are used for controlling brightness
-.equ DELAY, 0x150
-.equ DELAY2, 0x300
-.equ DELAY3, 0x400
-// speed can be used to increase or decrease movement speed
-.equ SPEED, 0x300
+
+.equ DELAY, 0x120000
 
 // configure GPIO 20 - 27 for output
 ldr r0, FSEL2
-mov r1, #0x240000
+mov r1, $0x240000
 add r1, r1, #0x009200
 add r1, r1, #0x000049
 str r1, [r0]
 
-// prep register to hold GPIO on/off switches
-mov r1, #(31<<18) // all LEDs on
-mov r6, #(17<<18) // middle 3 LEDs
-mov r7, #(10<<18) // main LED on
-
+// prep register to hold GPIO on/off switch
+mov r1, #(1<<20)
 // counter
 mov r3, #0
 // destination
@@ -33,44 +28,21 @@ mov r4, #7
 
 loop:
 
-// set up timer
-mov r5, #SPEED
+// set current GPIO high
+ldr r0, SET0
+str r1, [r0]
 
-  brightness:
-    // set all LEDs high
-    ldr r0, SET0
-    str r1, [r0]
+// delay
+mov r2, #DELAY
+wait1:
+    subs r2, #1
+    bne wait1
 
-    // delay
-    mov r2, #DELAY
-    wait1:
-        subs r2, #1
-        bne wait1
+// set current GPIO low
+ldr r0, CLR0
+str r1, [r0]
 
-    // set edge GPIOs low
-    ldr r0, CLR0
-    str r6, [r0]
-
-    // delay
-    mov r2, #DELAY2
-    wait2:
-        subs r2, #1
-        bne wait2
-
-    // set all GPIOs low except middle
-    ldr r0, CLR0
-    str r7, [r0]
-
-    // delay
-    mov r2, #DELAY3
-    wait3:
-        subs r2, #1
-        bne wait3
-
-  subs r5, #1
-  bne brightness
-
-// compare counter and location
+// compare counter to destination
 cmp r3, r4
   beq switch
   blt forward
@@ -78,19 +50,15 @@ cmp r3, r4
 
 b loop
 
-// Moves the LED forward
+// Moves the LED forward 1
 forward:
   lsl r1, r1, #1
-  lsl r6, r6, #1
-  lsl r7, r7, #1
   add r3, r3, #1
 b loop
 
-// Brings the LED back
+// Brings the LED back 1
 backward:
   lsr r1, r1, #1
-  lsr r6, r6, #1
-  lsr r7, r7, #1
   sub r3, r3, #1
 b loop
 
