@@ -1,5 +1,1 @@
-Hi! Replace EVERYTHING in this file with Your lab information in the following format:
-
-<assigned_lab_day> <assigned_lab_start_time>-<assigned_lab_end_time>
-
-Your submitted file should exclusively contain your lab information, none of this boiler-plate text.
+<9/16/20> <20:30>-<21:48>

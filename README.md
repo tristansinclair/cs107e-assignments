@@ -6,10 +6,10 @@
 
 ## Assignment 1: Larson scanner
 
-#### Basic functionality: <!--assign1-basic-->
-#### Extension functionality: <!--assign1-extension-->
-#### Code quality: <!--assign1-style-->
-#### Test quality: <!--assign1-test-->
+#### Basic functionality: `10.0/10.0`<!--assign1-basic-->
+#### Extension functionality: `5.0/5.0`<!--assign1-extension-->
+#### Code quality: `+`<!--assign1-style-->
+#### Test quality: `+`<!--assign1-test-->
 
 ## Assignment 2: gpio, timer, and clock
 
