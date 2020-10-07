@@ -113,12 +113,33 @@ void test_timer(void)
     unsigned int finish = timer_get_ticks();
     assert(finish > start);
 
-    // Test timer delay
+    // Test timer delay usecs
     int usecs = 100;
     start = timer_get_ticks();
     timer_delay_us(usecs);
     finish = timer_get_ticks();
     assert(finish >= start + usecs);
+
+    // Test timer delay millisecs
+    int msecs = 100;
+    start = timer_get_ticks();
+    timer_delay_ms(msecs);
+    finish = timer_get_ticks();
+    assert(finish >= start + msecs);
+
+    // Test timer delay 1 second
+    int sec = 1;
+    start = timer_get_ticks();
+    timer_delay(sec);
+    finish = timer_get_ticks();
+    assert(finish >= start + sec);
+
+    // Test timer delay 2 seconds
+    int secs = 2;
+    start = timer_get_ticks();
+    timer_delay(secs);
+    finish = timer_get_ticks();
+    assert(finish >= start + secs);
 }
 
 // Uncomment each call below when you have implemented the functions
