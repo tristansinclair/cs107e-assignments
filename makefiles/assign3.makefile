@@ -1,4 +1,4 @@
-MY_MODULES = strings.o printf.o
+MY_MODULES = strings.o printf.o gpio.o
 
 # MY_MODULES is a list of those library modules (such as gpio.o)
 # for which you intend to use your own code. The reference implementation

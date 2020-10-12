@@ -1,15 +1,32 @@
 #include "strings.h"
 
-void *memset(void *s, int c, size_t n)
+void *memset(void *s, int c, size_t n) // write n bytes of c to *s
 {
-    /* TODO: Your code here */
-    return NULL;
+    unsigned char *ptr = s; // *ptr = address
+
+    while(n != 0)
+    {
+        
+        *ptr = (char)c; // the byte we're looking at = c (in char form)
+        ptr++; // adds 1 byte too address in ptr
+        n--; // increment count
+
+    }
+    return s;
 }
 
 void *memcpy(void *dst, const void *src, size_t n)
 {
-    /* TODO: Your code here */
-    return NULL;
+    unsigned char *ptr = dst;
+    unsigned const char *ptr2 = src;
+
+    while (n != 0) {
+        *ptr = *ptr2;
+        ptr2++;
+        ptr++;
+        n--;
+    }
+    return dst;
 }
 
 size_t strlen(const char *s)
