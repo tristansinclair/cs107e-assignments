@@ -13,10 +13,10 @@
 
 ## Assignment 2: gpio, timer, and clock
 
-#### Basic functionality: <!--assign2-basic-->
-#### Extension functionality: <!--assign2-extension-->
-#### Code quality: <!--assign2-style-->
-#### Test quality: <!--assign2-test-->
+#### Basic functionality: `9.0/10.0`<!--assign2-basic-->
+#### Extension functionality: `5.0/5.0`<!--assign2-extension-->
+#### Code quality: `ok`<!--assign2-style-->
+#### Test quality: `+`<!--assign2-test-->
 
 ## Assignment 3: strings and printf
 
