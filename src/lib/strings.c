@@ -64,6 +64,7 @@ size_t strlcat(char *dst, const char *src, size_t maxsize)
 {
     int counter = 0;
     char *myptr = dst; // point to beginning of dst
+    int length = strlen(src);
 
     while (*myptr != '\0' && counter != maxsize)
     { // don't assume null in dst
@@ -72,7 +73,7 @@ size_t strlcat(char *dst, const char *src, size_t maxsize)
     }
     if (counter == maxsize)
     { // if there wasn't a null ptr
-        return maxsize + strlen(src);
+        return maxsize + length;
     }
 
     while (*src != '\0' && maxsize - strlen(dst) - 1 != 0)
@@ -83,7 +84,7 @@ size_t strlcat(char *dst, const char *src, size_t maxsize)
     }
     *myptr = '\0';
 
-    return strlen(dst); // returns length of the FINAL string
+    return counter + length; // returns length of dst + src (regardless if there was space for src)
 }
 
 unsigned int strtonum(const char *str, const char **endptr)
