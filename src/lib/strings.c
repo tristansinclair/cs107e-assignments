@@ -90,7 +90,7 @@ unsigned int strtonum(const char *str, const char **endptr)
 {
     const char *ptr = str; // initialize ptr to point to same spot as str
     int counter = strlen(str);
-    int hex = 0;
+    int hex = 0; // bool
 
     // check if first 2 chars are "0x"
     if (*ptr == '0')
@@ -99,14 +99,9 @@ unsigned int strtonum(const char *str, const char **endptr)
         counter--;
         if (*ptr == 'x')
         {
-            //hex = 1; // true
+            hex = 1; // true
             counter--;
             ptr++;
-            return 1;
-        }
-        else
-        {
-            return 0;
         }
     }
 
