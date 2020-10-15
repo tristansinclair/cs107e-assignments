@@ -117,20 +117,11 @@ int signed_to_base(char *buf, size_t bufsize, int val, int base, int min_width)
 
 int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
 {
-    return 0;
-}
-
-int snprintf(char *buf, size_t bufsize, const char *format, ...)
-{
-    va_list args;
-
-    int counter = 0;
+    int counter = 0; // counter will hold the size of the string we are building
     char *ptr = buf;
-    char *string = 0;
-    char optionalWidth[4];
-    int strlength = 0;
-
-    //char c = '\0'
+    char optionalWidth[3]; // max of optional width of 99 w/ only two characters
+    memset(optionalWidth, 0, 3); // set memory to be ""
+    int strlength = 0; // used for calculating lengths
 
     if (bufsize != 0)
     {
@@ -139,7 +130,6 @@ int snprintf(char *buf, size_t bufsize, const char *format, ...)
 
     int remainingspace = bufsize;
 
-    va_start(args, format);
     while (*format)
     {
         if (*format == '%')
@@ -149,10 +139,11 @@ int snprintf(char *buf, size_t bufsize, const char *format, ...)
             if (*format == '0')
             {
                 format++;
-                optionalWidth[1] = *format;
+                optionalWidth[0] = *format;
                 format++;
-                if (*format < 58 && *format > 47) {
-                    optionalWidth[2] = *format;
+                if (*format < 58 && *format > 47)
+                {
+                    optionalWidth[1] = *format;
                     format++;
                 }
             }
@@ -164,50 +155,70 @@ int snprintf(char *buf, size_t bufsize, const char *format, ...)
                 ptr++;
                 *ptr = '\0';
                 remainingspace -= 1;
-                counter++;
+                //counter++;
                 break;
 
             case 's':
-                string = va_arg(args, char *);
-                strlcat(ptr, string, remainingspace);
-                strlength = strlen(string);
+                //string = va_arg(args, char *);
+                strlength = strlcat(ptr, va_arg(args, char *), remainingspace);
                 ptr += strlength;
-                counter += strlength;
+                counter += (strlength - 1);
                 remainingspace -= strlength;
                 break;
 
             case 'd':
-                ptr += signed_to_base(ptr, remainingspace, va_arg(args, int), 10, strtonum(optionalWidth, NULL));
+                strlength = signed_to_base(ptr, remainingspace, va_arg(args, int), 10, strtonum(optionalWidth, NULL));
+                ptr += strlength;
+                counter += (strlength - 1);
                 memset(optionalWidth, 0, 4);
                 break;
 
             case 'x':
-
-                ptr += unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, strtonum(optionalWidth, NULL));
+                strlength = unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, strtonum(optionalWidth, NULL));
+                ptr += strlength;
+                counter += (strlength - 1);
                 memset(optionalWidth, 0, 4);
                 break;
 
             case '%':
-                *ptr = *format;
+                strlength = unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, 0);
                 ptr++;
+                break;
+
+            case 'p':
+                //*ptr = unsigned;
+                strlcat(ptr, "0x", remainingspace);
+                ptr += 2;
+                strlength = unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, 0);
+                ptr += strlength;
+                counter += 2 + strlength - 1; // 0x + 12345678 - counter addition below
                 break;
             }
         }
         else
         {
-            //memset(ptr, *format, 1);
             *ptr = *format;
             ptr++;
         }
 
         format++;
         counter++;
-        //remainingspace -= counter;
-        //ptr++;
-
         *ptr = '\0';
     }
+    *ptr = '\0'; //  close the string
+
     return counter;
+}
+
+int snprintf(char *buf, size_t bufsize, const char *format, ...)
+{
+
+    va_list va;
+    va_start(va, format);
+    //char buffer[1];
+    const int length = vsnprintf(buf, bufsize, format, va);
+    va_end(va);
+    return length;
 }
 
 int printf(const char *format, ...)
