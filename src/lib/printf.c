@@ -46,10 +46,10 @@ static void reverse(char *str)
 
 int unsigned_to_base(char *buf, size_t bufsize, unsigned int val, int base, int min_width)
 {
-    // Check if it needs zeros
-    // add zeros
-    // turn int to str
-    // append str to buf
+    if (bufsize == 0) // if we aren't supposed to write here, just return 0
+    {
+        return 0;
+    }
 
     int counter = 0;
 
@@ -62,19 +62,14 @@ int unsigned_to_base(char *buf, size_t bufsize, unsigned int val, int base, int 
         counter++;
     }
 
-    if (bufsize != 0)
-    {
-        *buf = '\0';
-    }
-    //counter++;
-
+    *buf = '\0';
     buf -= counter; //  set buf ptr back to beginning
 
     char str[length + 1];
 
     int num = 0;
     char c = 0;
-    
+
     for (int i = 0; i < length; i++)
     {
         num = val % base;
@@ -109,7 +104,7 @@ int signed_to_base(char *buf, size_t bufsize, int val, int base, int min_width)
             min_width--;
         }
         //*buf = '\0';
-        
+
         val *= -1;
 
         return unsigned_to_base(buf, bufsize, val, base, min_width) + 1;
@@ -122,7 +117,9 @@ int signed_to_base(char *buf, size_t bufsize, int val, int base, int min_width)
 
 int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
 {
-    /* TODO: Your code here */
+    // va_start(args, n);
+
+    // va_end(args);
     return 0;
 }
 

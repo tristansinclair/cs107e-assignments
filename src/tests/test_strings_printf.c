@@ -119,10 +119,9 @@ static void test_strlcat(void)
     buf2[1] = '0';
     buf2[2] = '\0';
 
-    char *ptr = &buf2[2];
-
-    strlcat(ptr, "9999", sizeof(buf2) - 1);
-    assert(strcmp(buf2, "-09999") == 0);
+    //char *ptr = &buf2[1];
+    strlcat(buf2 + 1, "9999", 4);
+    assert(strcmp(buf2, "-099") == 0);
 }
 
 static void test_strtonum(void)
@@ -179,62 +178,62 @@ static void test_to_base(void)
 {
     /* ----------- Decimal tests ----------- */
     char buf[8];
-    memset(buf, 0x0, sizeof(buf));                  // init contents with known value
+    memset(buf, 0x77, sizeof(buf));                 // init contents with known value
     int num = unsigned_to_base(buf, 8, 123, 10, 0); // ("123")
     assert(num == 3);
     assert(strlen(buf) == 3);
     assert(strcmp(buf, "123") == 0);
-    memset(buf, 0x0, sizeof(buf));              // init contents with known value
+    memset(buf, 0x77, sizeof(buf));             // init contents with known value
     num = unsigned_to_base(buf, 8, 123, 10, 4); // ("0123")
     assert(num == 4);
     assert(strcmp(buf, "0123") == 0);
     // min value
-    memset(buf, 0x0, sizeof(buf));              // init contents with known value
+    memset(buf, 0x77, sizeof(buf));             // init contents with known value
     num = unsigned_to_base(buf, 8, 123, 10, 9); // ("0000001")
     assert(num == 9);
     assert(strcmp(buf, "0000001") == 0);
     // bufsize = 0
-    memset(buf, 0x0, sizeof(buf));        // init contents with known value
-    unsigned_to_base(buf, 0, 123, 10, 9); // ("") b/c nothing is written here
-    assert(strcmp(buf, "") == 0);
+    memset(buf, 0x77, sizeof(buf));             // init contents with known value
+    num = unsigned_to_base(buf, 0, 123, 10, 9); // ("") b/c nothing is written here
+    assert(num == 0);
     // all zeros
-    memset(buf, 0x0, sizeof(buf));               // init contents with known value
+    memset(buf, 0x77, sizeof(buf));              // init contents with known value
     num = unsigned_to_base(buf, 8, 123, 10, 11); // ("0000000")
     assert(num == 11);
     assert(strcmp(buf, "0000000") == 0);
     // num bigger than buf size
-    memset(buf, 0x0, sizeof(buf));                   // init contents with known value
+    memset(buf, 0x77, sizeof(buf));                  // init contents with known value
     num = unsigned_to_base(buf, 8, 12345678, 10, 0); // ("1234567")
     assert(num == 8);
     assert(strcmp(buf, "1234567") == 0);
 
     /* ----------- Hex tests ----------- */
-    memset(buf, 0x0, sizeof(buf));               // init contents with known value
+    memset(buf, 0x77, sizeof(buf));              // init contents with known value
     num = unsigned_to_base(buf, 8, 0x7e, 16, 0); // ("7e")
     assert(num == 2);
     assert(strcmp(buf, "7e") == 0);
 
-    memset(buf, 0x0, sizeof(buf));                   // init contents with known value
+    memset(buf, 0x77, sizeof(buf));                  // init contents with known value
     num = unsigned_to_base(buf, 8, 0x1a2e3b, 16, 0); // ("1a2e3b")
     assert(num == 6);
     assert(strcmp(buf, "1a2e3b") == 0);
     // min value
-    memset(buf, 0x0, sizeof(buf));                 // init contents with known value
+    memset(buf, 0x77, sizeof(buf));                // init contents with known value
     num = unsigned_to_base(buf, 8, 0x123a, 16, 7); // ("000123a")
     assert(num == 7);
     assert(strcmp(buf, "000123a") == 0);
     // all zeros
-    memset(buf, 0x0, sizeof(buf));                  // init contents with known value
+    memset(buf, 0x77, sizeof(buf));                 // init contents with known value
     num = unsigned_to_base(buf, 8, 0x123a, 16, 12); // ("0000000")
     assert(num == 12);
     assert(strcmp(buf, "0000000") == 0);
     // hex num bigger than buf size
-    memset(buf, 0x0, sizeof(buf));                     // init contents with known value
+    memset(buf, 0x77, sizeof(buf));                    // init contents with known value
     num = unsigned_to_base(buf, 8, 0x1234abcd, 16, 0); // ("1234abc")
     assert(num == 8);
     assert(strcmp(buf, "1234abc") == 0);
     // hex num bigger than buf size + min length
-    memset(buf, 0x0, sizeof(buf));                      // init contents with known value
+    memset(buf, 0x77, sizeof(buf));                     // init contents with known value
     num = unsigned_to_base(buf, 8, 0x1234abcd, 16, 10); // ("1234abc")
     assert(num == 10);
     assert(strcmp(buf, "001234a") == 0);
@@ -274,16 +273,34 @@ static void test_to_base(void)
     assert(n == 4);
     assert(strcmp(buf2, "-012") == 0);
 
-    // !!!!!!!!!!!!!!!!!!!!! issue
     memset(buf2, 0x77, bufsize); // init contents with known value
     n = signed_to_base(buf2, 5, -9999, 10, 6);
     assert(n == 6);
-    assert(strcmp(buf2, "-09999") == 0);
+    assert(strcmp(buf2, "-099") == 0);
 
     memset(buf2, 0x77, bufsize); // init contents with known value
     n = signed_to_base(buf2, 5, -9999999, 10, 6);
     assert(n == 8);
-    assert(strcmp(buf2, "-9999999") == 0);
+    assert(strcmp(buf2, "-999") == 0);
+
+    memset(buf2, 0x77, bufsize); // init contents with known value
+    n = signed_to_base(buf2, 5, -0x12abcde, 16, 6);
+    assert(n == 8);
+    assert(strcmp(buf2, "-12a") == 0);
+
+    memset(buf2, 0x77, bufsize); // init contents with known value
+    n = signed_to_base(buf2, 5, -0x1, 16, 0);
+    assert(n == 2);
+    assert(strcmp(buf2, "-1") == 0);
+
+    memset(buf2, 'T', 1);
+    memset(buf2 + 1, 'E', 1);
+    memset(buf2 + 2, 'S', 1);
+    memset(buf2 + 3, 'T', 1);
+    memset(buf2 + 4, 0, 1);
+    assert(strcmp(buf2, "TEST") == 0);
+    assert(signed_to_base(buf2, 0, -0x123, 16, 10) == 1); // signed base w/ negative return 1 if bufsize = 0
+    assert(strcmp(buf2, "TEST") == 0);
 }
 
 // static void test_snprintf(void)
@@ -297,39 +314,37 @@ static void test_to_base(void)
 //     snprintf(buf, bufsize, "Hello, world!");
 //     assert(strcmp(buf, "Hello, world!") == 0);
 
-//     // Decimal
-//     snprintf(buf, bufsize, "%d", 45);
-//     assert(strcmp(buf, "45") == 0);
+    //     // Decimal
+    //     snprintf(buf, bufsize, "%d", 45);
+    //     assert(strcmp(buf, "45") == 0);
 
-//     // Hexadecimal
-//     snprintf(buf, bufsize, "%04x", 0xef);
-//     assert(strcmp(buf, "00ef") == 0);
+    //     // Hexadecimal
+    //     snprintf(buf, bufsize, "%04x", 0xef);
+    //     assert(strcmp(buf, "00ef") == 0);
 
-//     // Pointer
-//     snprintf(buf, bufsize, "%p", (void *) 0x20200004);
-//     assert(strcmp(buf, "0x20200004") == 0);
+    //     // Pointer
+    //     snprintf(buf, bufsize, "%p", (void *) 0x20200004);
+    //     assert(strcmp(buf, "0x20200004") == 0);
 
-//     // Character
-//     snprintf(buf, bufsize, "%c", 'A');
-//     assert(strcmp(buf, "A") == 0);
+    //     // Character
+    //     snprintf(buf, bufsize, "%c", 'A');
+    //     assert(strcmp(buf, "A") == 0);
 
-//     // String
-//     snprintf(buf, bufsize, "%s", "binky");
-//     assert(strcmp(buf, "binky") == 0);
+    //     // String
+    //     snprintf(buf, bufsize, "%s", "binky");
+    //     assert(strcmp(buf, "binky") == 0);
 
-//     // Format string with intermixed codes
-//     snprintf(buf, bufsize, "CS%d%c!", 107, 'e');
-//     assert(strcmp(buf, "CS107e!") == 0);
+    //     // Format string with intermixed codes
+    //     snprintf(buf, bufsize, "CS%d%c!", 107, 'e');
+    //     assert(strcmp(buf, "CS107e!") == 0);
 
-//     // Test return value
-//     assert(snprintf(buf, bufsize, "Hello") == 5);
-//     assert(snprintf(buf, 2, "Hello") == 5);
+    //     // Test return value
+    //     assert(snprintf(buf, bufsize, "Hello") == 5);
+    //     assert(snprintf(buf, 2, "Hello") == 5);
 // }
 
 void main(void)
 {
-    // TODO: Add more and better tests!
-
     uart_init();
     uart_putstring("Start execute main() in tests/test_strings_printf.c\n");
 
@@ -340,7 +355,7 @@ void main(void)
     test_strlcat();
     test_strtonum();
     test_to_base();
-    // test_snprintf();
+    //test_snprintf();
 
     uart_putstring("Successfully finished executing main() in tests/test_strings_printf.c\n");
     uart_putchar(EOT);
