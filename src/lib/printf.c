@@ -117,16 +117,87 @@ int signed_to_base(char *buf, size_t bufsize, int val, int base, int min_width)
 
 int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
 {
-    // va_start(args, n);
-
-    // va_end(args);
     return 0;
 }
 
 int snprintf(char *buf, size_t bufsize, const char *format, ...)
 {
-    /* TODO: Your code here */
-    return 0;
+    va_list args;
+
+    int counter = 0;
+    char *ptr = buf;
+    char c, *string;
+
+    // if (bufsize != 0)
+    // {
+    //     ptr = '\0';
+    // }
+
+    int remainingspace = bufsize;
+
+    va_start(args, format);
+    while (counter < bufsize)
+    {
+        if (*format == '%')
+        {
+            switch (*format++)
+            {
+            case 'c':
+
+                //strlcat(char *dst, const char *src, size_t maxsize)
+                c = (char)va_arg(args, int);
+
+                *ptr = c;
+                //memset(ptr, va_arg(args, int), 1);
+                ptr++;
+                remainingspace -= 1;
+                counter++;
+                break;
+
+            case 's':
+                string = (char *)va_arg(args, int);
+                strlcat(ptr, string, remainingspace);
+                int strlength = strlen(string);
+                ptr += strlength;
+                counter += strlength;
+                remainingspace -= strlength;
+                break;
+
+            case 'd':
+
+                //itoa(va_arg(args, int), tmp, 10);
+                //strcpy(&buff[j], tmp);
+                //j += strlen(tmp);
+                break;
+
+            case 'x':
+
+                //itoa(va_arg(args, int), tmp, 16);
+                //strcpy(&buff[j], tmp);
+                //j += strlen(tmp);
+                break;
+
+            case '%':
+                *ptr = *format;
+                ptr++;
+                break;
+            }
+        }
+        else
+        {
+            //memset(ptr, *format, 1);
+            *ptr = *format;
+            ptr++;
+        }
+
+        format++;
+        counter++;
+        //remainingspace -= counter;
+        //ptr++;
+
+        *ptr = '\0';
+    }
+    return counter;
 }
 
 int printf(const char *format, ...)
