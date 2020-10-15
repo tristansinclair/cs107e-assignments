@@ -126,55 +126,65 @@ int snprintf(char *buf, size_t bufsize, const char *format, ...)
 
     int counter = 0;
     char *ptr = buf;
-    char c, *string;
+    char *string = 0;
+    char optionalWidth[4];
+    int strlength = 0;
 
-    // if (bufsize != 0)
-    // {
-    //     ptr = '\0';
-    // }
+    //char c = '\0'
+
+    if (bufsize != 0)
+    {
+        *ptr = '\0';
+    }
 
     int remainingspace = bufsize;
 
     va_start(args, format);
-    while (counter < bufsize)
+    while (*format)
     {
         if (*format == '%')
         {
-            switch (*format++)
+            format++;
+
+            if (*format == '0')
+            {
+                format++;
+                optionalWidth[1] = *format;
+                format++;
+                if (*format < 58 && *format > 47) {
+                    optionalWidth[2] = *format;
+                    format++;
+                }
+            }
+
+            switch (*format)
             {
             case 'c':
-
-                //strlcat(char *dst, const char *src, size_t maxsize)
-                c = (char)va_arg(args, int);
-
-                *ptr = c;
-                //memset(ptr, va_arg(args, int), 1);
+                memset(ptr, va_arg(args, int), 1);
                 ptr++;
+                *ptr = '\0';
                 remainingspace -= 1;
                 counter++;
                 break;
 
             case 's':
-                string = (char *)va_arg(args, int);
+                string = va_arg(args, char *);
                 strlcat(ptr, string, remainingspace);
-                int strlength = strlen(string);
+                strlength = strlen(string);
                 ptr += strlength;
                 counter += strlength;
                 remainingspace -= strlength;
                 break;
 
             case 'd':
-
-                //itoa(va_arg(args, int), tmp, 10);
-                //strcpy(&buff[j], tmp);
-                //j += strlen(tmp);
+                ptr += signed_to_base(ptr, remainingspace, va_arg(args, int), 10, strtonum(optionalWidth, NULL));
+                memset(optionalWidth, 0, 4);
                 break;
 
             case 'x':
 
-                //itoa(va_arg(args, int), tmp, 16);
-                //strcpy(&buff[j], tmp);
-                //j += strlen(tmp);
+                ptr += unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, strtonum(optionalWidth, NULL));
+                memset(optionalWidth, 0, 4);
                 break;
 
             case '%':

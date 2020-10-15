@@ -310,41 +310,40 @@ static void test_snprintf(void)
 
     memset(buf, 0x77, sizeof(buf)); // init contents with known value
 
-    snprintf(buf, bufsize, "%c", 'A');
-    assert(strcmp(buf, "c") == 0); // wrong, just for testing
-    assert(strcmp(buf, "A") == 0);
-
     // Start off simple...
     snprintf(buf, bufsize, "Hello, world!");
     assert(strcmp(buf, "Hello, world!") == 0);
 
-    //     // Decimal
-    //     snprintf(buf, bufsize, "%d", 45);
-    //     assert(strcmp(buf, "45") == 0);
+    // Decimal
+    snprintf(buf, bufsize, "%d", 45);
+    assert(strcmp(buf, "45") == 0);
 
-    //     // Hexadecimal
-    //     snprintf(buf, bufsize, "%04x", 0xef);
-    //     assert(strcmp(buf, "00ef") == 0);
+    snprintf(buf, bufsize, "%03d", 45);
+    assert(strcmp(buf, "045") == 0);
+
+    // Hexadecimal
+    // snprintf(buf, bufsize, "%04x", 0xef);
+    // assert(strcmp(buf, "00ef") == 0);
 
     //     // Pointer
     //     snprintf(buf, bufsize, "%p", (void *) 0x20200004);
     //     assert(strcmp(buf, "0x20200004") == 0);
 
-    //     // Character
-    //     snprintf(buf, bufsize, "%c", 'A');
-    //     assert(strcmp(buf, "A") == 0);
+    // Character
+    snprintf(buf, bufsize, "%c", 'A');
+    assert(strcmp(buf, "A") == 0);
 
-    //     // String
-    //     snprintf(buf, bufsize, "%s", "binky");
-    //     assert(strcmp(buf, "binky") == 0);
+    // String
+    snprintf(buf, bufsize, "%s", "binky");
+    assert(strcmp(buf, "binky") == 0);
 
-    //     // Format string with intermixed codes
-    //     snprintf(buf, bufsize, "CS%d%c!", 107, 'e');
-    //     assert(strcmp(buf, "CS107e!") == 0);
+    // Format string with intermixed codes
+    snprintf(buf, bufsize, "CS%d%c!", 107, 'e');
+    assert(strcmp(buf, "CS107e!") == 0);
 
-    //     // Test return value
-    //     assert(snprintf(buf, bufsize, "Hello") == 5);
-    //     assert(snprintf(buf, 2, "Hello") == 5);
+    // Test return value
+    assert(snprintf(buf, bufsize, "Hello") == 5);
+    assert(snprintf(buf, 2, "Hello") == 5);
 }
 
 void main(void)
