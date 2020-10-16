@@ -83,7 +83,6 @@ size_t strlcat(char *dst, const char *src, size_t maxsize)
         src++;
         *myptr = '\0';
     }
-    //*myptr = '\0';
 
     return counter + length; // returns length of dst + src (regardless if there was space for src)
 }

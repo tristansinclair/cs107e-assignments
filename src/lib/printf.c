@@ -10,7 +10,7 @@
  * int_length
  * 
  * returns number of digits in an int
- * +1 if negative (-21 == 3)//////////////
+ * +1 if negative (-21 == 3)
 */
 static int int_length(int num, int base)
 {
@@ -205,7 +205,7 @@ int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
         *ptr = '\0'; //  close the string
     }
 
-    return counter + strlen(format); // counter plus leftover in format
+    return counter  + strlen(format); // counter plus leftover in format
 }
 
 int snprintf(char *buf, size_t bufsize, const char *format, ...)
