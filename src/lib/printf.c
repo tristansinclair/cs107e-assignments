@@ -1,6 +1,7 @@
 #include "printf.h"
 #include "strings.h"
 #include "printf_internal.h"
+#include "uart.h"
 #include <stdarg.h>
 
 #define MAX_OUTPUT_LEN 1024
@@ -29,6 +30,11 @@ static int int_length(int num, int base)
     return counter;
 }
 
+/*
+ * reverse
+ * 
+ * reverse a string
+*/
 static void reverse(char *str)
 {
     char *beg = str;
@@ -61,8 +67,8 @@ int unsigned_to_base(char *buf, size_t bufsize, unsigned int val, int base, int 
         buf++;
         counter++;
     }
-
     *buf = '\0';
+
     buf -= counter; //  set buf ptr back to beginning
 
     char str[length + 1];
@@ -119,18 +125,16 @@ int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
 {
     int counter = 0; // counter will hold the size of the string we are building
     char *ptr = buf;
-    char optionalWidth[3]; // max of optional width of 99 w/ only two characters
+    char optionalWidth[3];       // max of optional width of 99 w/ only two characters
     memset(optionalWidth, 0, 3); // set memory to be ""
-    int strlength = 0; // used for calculating lengths
+    int strlength = 0;           // used for calculating lengths
 
     if (bufsize != 0)
     {
         *ptr = '\0';
     }
 
-    int remainingspace = bufsize;
-
-    while (*format)
+    while (*format && counter + 1 < bufsize)
     {
         if (*format == '%')
         {
@@ -153,45 +157,40 @@ int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
             case 'c':
                 memset(ptr, va_arg(args, int), 1);
                 ptr++;
-                *ptr = '\0';
-                remainingspace -= 1;
-                //counter++;
+                memset(ptr, '\0', 1);
                 break;
 
             case 's':
-                //string = va_arg(args, char *);
-                strlength = strlcat(ptr, va_arg(args, char *), remainingspace);
+                strlength = strlcat(ptr, va_arg(args, char *), bufsize - counter);
                 ptr += strlength;
                 counter += (strlength - 1);
-                remainingspace -= strlength;
                 break;
 
             case 'd':
-                strlength = signed_to_base(ptr, remainingspace, va_arg(args, int), 10, strtonum(optionalWidth, NULL));
+                strlength = signed_to_base(ptr, bufsize - counter, va_arg(args, int), 10, strtonum(optionalWidth, NULL));
                 ptr += strlength;
                 counter += (strlength - 1);
                 memset(optionalWidth, 0, 4);
                 break;
 
             case 'x':
-                strlength = unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, strtonum(optionalWidth, NULL));
+                strlength = unsigned_to_base(ptr, bufsize - counter, va_arg(args, int), 16, strtonum(optionalWidth, NULL));
                 ptr += strlength;
                 counter += (strlength - 1);
                 memset(optionalWidth, 0, 4);
                 break;
 
-            case '%':
-                strlength = unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, 0);
-                ptr++;
-                break;
-
             case 'p':
-                //*ptr = unsigned;
-                strlcat(ptr, "0x", remainingspace);
+                strlcat(ptr, "0x", bufsize - counter);
                 ptr += 2;
-                strlength = unsigned_to_base(ptr, remainingspace, va_arg(args, int), 16, 0);
+                strlength = unsigned_to_base(ptr, bufsize - counter, va_arg(args, int), 16, 0);
                 ptr += strlength;
                 counter += 2 + strlength - 1; // 0x + 12345678 - counter addition below
+                break;
+
+            case '%':
+                *ptr = '%';
+                ptr++;
                 break;
             }
         }
@@ -203,19 +202,16 @@ int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
 
         format++;
         counter++;
-        *ptr = '\0';
+        *ptr = '\0'; //  close the string
     }
-    *ptr = '\0'; //  close the string
 
-    return counter;
+    return counter + strlen(format); // counter plus leftover in format
 }
 
 int snprintf(char *buf, size_t bufsize, const char *format, ...)
 {
-
     va_list va;
     va_start(va, format);
-    //char buffer[1];
     const int length = vsnprintf(buf, bufsize, format, va);
     va_end(va);
     return length;
@@ -223,6 +219,13 @@ int snprintf(char *buf, size_t bufsize, const char *format, ...)
 
 int printf(const char *format, ...)
 {
-    /* TODO: Your code here */
-    return 0;
+    char buf[MAX_OUTPUT_LEN];
+    va_list va;
+    va_start(va, format);
+    const int length = vsnprintf(buf, 1024, format, va);
+    va_end(va);
+
+    uart_putstring(buf);
+
+    return length;
 }
