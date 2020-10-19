@@ -162,7 +162,6 @@ static void test_strtonum(void)
     // endptr tests
     const char *input2 = "0x123abcD", *rest2 = NULL; // in hex str
     strtonum(input2, &rest2);
-    assert(rest2 == &input2[8]);
     const char *input3 = "12345", *rest3 = NULL; // normal int w/ '\0'
     strtonum(input3, &rest3);
     assert(rest3 == &input3[5]);
@@ -386,11 +385,58 @@ static void test_snprintf(void)
     printf("\n\n");
 }
 
+static void problem_fix_tests(void)
+{
+    // 307 ------ tests for CAPITAL HEX VALUES in strtonum
+    int val = strtonum("0xABCDEF", NULL);
+    assert(val == 0xABCDEF);
+
+    const char *input = "0x107Erocks", *rest = NULL;
+    val = strtonum(input, &rest);
+    assert(val == 0x107E);
+    assert(rest == &input[6]);
+
+    val = strtonum("0xAaCcDdFf", NULL);
+    assert(val == 0xAACCDDFF);
+
+    const char *input2 = "0x641B1aF", *rest2 = NULL;
+    val = strtonum(input2, &rest2);
+    assert(val == 104968623);
+    assert(strcmp(rest2, "") == 0);
+
+    val = strtonum("0x990184AC", NULL);
+    assert(val == -1727953748);
+
+    // 314 ------ fixing snprintf for %(other) case
+
+    char buf[100];
+    size_t bufsize = sizeof(buf);
+    memset(buf, 0x77, sizeof(buf)); // init contents with known value
+
+    //snprintf(buf, bufsize, "You finish my %s. Or is it %?", "sandwiches", "pickles");
+    //assert(strcmp(buf, "You finish my sandwiches. Or is it ?") == 0);
+
+
+    // 314 ------ tests for fix w/ SHORT ADDRESSES
+    memset(buf, 0x77, sizeof(buf)); // init contents with known value
+    void *ptr = (void *)0x8000;     //  test 0x8000
+    assert(snprintf(buf, bufsize, "Address: %p", ptr) == 19);
+    assert(strcmp(buf, "Address: 0x00008000") == 0);
+    memset(buf, 0x77, sizeof(buf)); // init contents with known value
+    void *ptr2 = (void *)0x0; // test 0x0
+    assert(snprintf(buf, bufsize, "Address: %p", ptr2) == 19);
+    assert(strcmp(buf, "Address: 0x00000000") == 0);
+}
+
 void main(void)
 {
-    uart_init();
-    uart_putstring("Start execute main() in tests/test_strings_printf.c\n");
+    // uart_init();
+    // uart_putstring("Start execute main() in tests/test_strings_printf.c\n");
 
+    // test fixes
+    problem_fix_tests();
+
+    // normal tests
     test_memset();
     test_memcpy();
     test_strlen();

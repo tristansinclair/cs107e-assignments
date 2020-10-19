@@ -2,29 +2,19 @@
 
 void *memset(void *s, int c, size_t n) // write n bytes of c to *s
 {
-    unsigned char *ptr = s; // initialize ptr to point to same spot as s
-
-    while (n != 0)
-    {
-        *ptr = (char)c; // the byte we're looking at = c (in char form)
-        ptr++;          // adds 1 byte too address in ptr
-        n--;            // increment count
-    }
-
+    char *_s = s;
+    for (size_t i = 0; i < n;)
+        _s[i++] = c;
     return s;
 }
 
 void *memcpy(void *dst, const void *src, size_t n)
 {
-    unsigned char *ptr = dst;        // point ptr to dst
-    unsigned const char *ptr2 = src; // point ptr2 to src
-
-    while (n != 0)
+    char *_dst = dst;
+    const char *_src = src;
+    for (size_t i = 0; i < n; i++)
     {
-        *ptr = *ptr2; // copy byte from src to dst
-        ptr++;
-        ptr2++;
-        n--;
+        _dst[i] = _src[i];
     }
     return dst;
 }
@@ -42,22 +32,12 @@ size_t strlen(const char *s)
 
 int strcmp(const char *s1, const char *s2)
 {
-    int val = 0;
-    while (*s1 != '\0' && *s2 != '\0' && *s1 == *s2) // while not at end of string and they equal eachother incremement
+    while (*s1 && *s2 && *s1 == *s2)
     {
-        s2++; // incremment 1 byte
         s1++;
+        s2++;
     }
-    if (*s1 > *s2)
-    {
-        val = 1;
-    }
-    else if (*s1 < *s2)
-    {
-        val = -1;
-    }
-
-    return val;
+    return *s1 - *s2;
 }
 
 size_t strlcat(char *dst, const char *src, size_t maxsize)
@@ -87,6 +67,12 @@ size_t strlcat(char *dst, const char *src, size_t maxsize)
     return counter + length; // returns length of dst + src (regardless if there was space for src)
 }
 
+enum
+{
+    DECIMAL = 10,
+    HEX = 16
+};
+
 unsigned int strtonum(const char *str, const char **endptr)
 {
     const char *ptr = str; // initialize ptr to point to same spot as str
@@ -107,19 +93,24 @@ unsigned int strtonum(const char *str, const char **endptr)
     }
 
     int result = 0;
-    int factor = (hex == 0) ? 10 : 0x10;
+    int factor = (hex == 0) ? DECIMAL : HEX;
 
     while (counter != 0)
     {
-        if (*ptr < 58 && *ptr > 47) // if 0-9
+        if (*ptr <= '9' && *ptr >= '0') // if 0-9
         {
             result *= factor;
-            result += *ptr % 48; // add to result
+            result += *ptr % '0'; // add to result
         }
-        else if (hex == 1 && *ptr < 103 && *ptr >= 97) // hex is valid AND if a-f
+        else if (hex == 1 && *ptr >= 'a' && *ptr <= 'f') // hex is valid AND if a-f
         {
             result *= factor;
-            result += *ptr % 87; // add to result (97 (a) % 87 = 10)
+            result += *ptr % ('a' - 10); // add to result (97 (a) % 87 = 10)
+        }
+        else if (hex == 1 && *ptr >= 'A' && *ptr <= 'F') // hex is valid AND if a-f
+        {
+            result *= factor;
+            result += *ptr % ('A' - 10); // add to result (65 (A) % 55 = 10)
         }
         else // anything else would be an invalid num therefore break
         {

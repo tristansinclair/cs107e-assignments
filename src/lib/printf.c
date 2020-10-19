@@ -109,11 +109,8 @@ int signed_to_base(char *buf, size_t bufsize, int val, int base, int min_width)
             bufsize--;
             min_width--;
         }
-        //*buf = '\0';
 
-        val *= -1;
-
-        return unsigned_to_base(buf, bufsize, val, base, min_width) + 1;
+        return unsigned_to_base(buf, bufsize, -val, base, min_width) + 1;
     }
     else
     {
@@ -183,7 +180,7 @@ int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
             case 'p':
                 strlcat(ptr, "0x", bufsize - counter);
                 ptr += 2;
-                strlength = unsigned_to_base(ptr, bufsize - counter, va_arg(args, int), 16, 0);
+                strlength = unsigned_to_base(ptr, bufsize - counter, va_arg(args, int), 16, 8);
                 ptr += strlength;
                 counter += 2 + strlength - 1; // 0x + 12345678 - counter addition below
                 break;
@@ -192,6 +189,10 @@ int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
                 *ptr = '%';
                 ptr++;
                 break;
+
+            default:
+                *ptr = *format;
+                ptr++;
             }
         }
         else
@@ -205,7 +206,7 @@ int vsnprintf(char *buf, size_t bufsize, const char *format, va_list args)
         *ptr = '\0'; //  close the string
     }
 
-    return counter  + strlen(format); // counter plus leftover in format
+    return counter + strlen(format); // counter plus leftover in format
 }
 
 int snprintf(char *buf, size_t bufsize, const char *format, ...)
