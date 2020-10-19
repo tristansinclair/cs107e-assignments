@@ -20,10 +20,10 @@
 
 ## Assignment 3: strings and printf
 
-#### Basic functionality: <!--assign3-basic-->
-#### Extension functionality: <!--assign3-extension-->
-#### Code quality: <!--assign3-style-->
-#### Test quality: <!--assign3-test-->
+#### Basic functionality: `6.5/10.0`<!--assign3-basic-->
+#### Extension functionality: `0/5.0`<!--assign3-extension-->
+#### Code quality: `ok`<!--assign3-style-->
+#### Test quality: `+`<!--assign3-test-->
 
 ## Assignment 4: backtrace and malloc
 
