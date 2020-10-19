@@ -1,0 +1,12 @@
+CS107E_AUTO:arg->format="%p"
+CS107E_AUTO:arg->ptrs[0]=0x00000000
+CS107E_AUTO:buf="0x00000000"
+CS107E_AUTO:====================================================================
+CS107E_AUTO:arg->format="Here's an important address: %p."
+CS107E_AUTO:arg->ptrs[0]=0x00008000
+CS107E_AUTO:buf="Here's an important address: 0x00008000."
+CS107E_AUTO:====================================================================
+CS107E_AUTO:arg->format="The address %p is also important."
+CS107E_AUTO:arg->ptrs[0]=0x20200000
+CS107E_AUTO:buf="The address 0x20200000 is also important."
+CS107E_AUTO:====================================================================

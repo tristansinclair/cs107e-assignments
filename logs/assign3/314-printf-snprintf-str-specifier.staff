@@ -1,0 +1,15 @@
+CS107E_AUTO:arg->format="You finish my %s. Or is it %?"
+CS107E_AUTO:arg->strs[0]="sandwiches"
+CS107E_AUTO:arg->strs[1]="pickles"
+CS107E_AUTO:buf="You finish my sandwiches. Or is it ?"
+CS107E_AUTO:====================================================================
+CS107E_AUTO:arg->format="%s%s"
+CS107E_AUTO:arg->strs[0]="car"
+CS107E_AUTO:arg->strs[1]="pet"
+CS107E_AUTO:buf="carpet"
+CS107E_AUTO:====================================================================
+CS107E_AUTO:arg->format="%s shi %s zao."
+CS107E_AUTO:arg->strs[0]="Wo"
+CS107E_AUTO:arg->strs[1]="xi"
+CS107E_AUTO:buf="Wo shi xi zao."
+CS107E_AUTO:====================================================================
