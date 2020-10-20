@@ -78,17 +78,50 @@ void *malloc(size_t nbytes)
         return NULL;
     }
 
-    nbytes = roundup(nbytes, 8);     // align on 8 byte system
+    nbytes = roundup(nbytes, 8); // align on 8 byte system
+
+    struct header *hdr = (struct header *)(heap_start); // points to heap start
+    size_t size = hdr->size;                            // size of current block
+    int status = hdr->status;                           // status of current block
+
+    // In order to recycle:
+    // status == FREE
+    // total_bytes <= size
+    // hdr < heap_end
+
+    while (status == IN_USE && nbytes > size && (void *)hdr < heap_end) // search for available space
+    {
+        hdr += 1 + (size / 8);
+        size = hdr->size;
+        status = hdr->status;
+    }
+    // now hdr will point to a space that can be worked with
+
+    if ((void *)hdr < heap_end) // if this is a recycled space....
+    {
+        hdr->size = nbytes;   // write new size to hdr
+        hdr->status = IN_USE; // set status to IN_USE
+
+        if (size - nbytes >= 8) // if there are at least 16 bytes remaining after our allocation... !!!! MEMORY LEAK IF LESS THAN 16 BYTES REMAIN
+        {
+            struct header *new_hdr = hdr + 1 + (nbytes / 8);
+            new_hdr->size = size - nbytes - 8; // size - new size - new hdr
+            new_hdr->status = FREE;
+        }
+        return hdr + 1;
+    }
+
     size_t total_bytes = nbytes + 8; // total bytes needed to be allocated b/c header
 
     void *prev_end = sbrk(total_bytes); // points to the last byte of the prev block
-    if ((int *)(prev_end) == NULL)       // if there isn't room for your request (heap is full)
+    if ((int *)(prev_end) == NULL)      // if there isn't room for your request (heap is full)
     {
         return NULL;
     }
 
-    struct header *hdr = (struct header *)((char *)prev_end + 1); // hdr points to start point of malloc
-    hdr->size = nbytes;                                           // stores bytes requested WITHOUT HEADER SIZE
+    // now if it isn't a recycled space
+    hdr = (struct header *)((char *)prev_end + 1); // hdr points to start point of malloc
+    hdr->size = nbytes;                            // stores bytes requested WITHOUT HEADER SIZE
     hdr->status = IN_USE;
 
     void *data_start = (void *)(hdr + 1); // (hdr + 1) is our data start, then cast to a void ptr
@@ -100,27 +133,48 @@ void free(void *ptr)
 {
     struct header *hdr = ptr;
     hdr--; // moves back 8 bytes to the beg of the header
-    if (hdr->status == IN_USE)
+    size_t size = hdr->size;
+    int status = hdr->status;
+
+    if (status == IN_USE)
     {
         hdr->status = FREE;
     }
+
+    struct header *next_hdr = hdr + 1 + (size / 8);
+    size_t next_size = next_hdr->size;
+    int next_status = next_hdr->status;
+
+    while (next_status == FREE && (void *)next_hdr < heap_end)
+    {
+        hdr->size = hdr->size + next_size + 8; // update first header size
+
+        next_hdr += (1 + (next_size / 8));
+        next_size = next_hdr->size;
+        next_status = next_hdr->status;
+    }
 }
-
-// static void *get_free_block(size_t nbytes)
-// {
-//     int *search = heap_start;
-//     int *size = search;
-//     int *status = search++;
-
-//     while (1)
-//         if (*status == 1 && nbytes < *size)
-//         {
-//             return search;
-//         }
-// }
 
 void *realloc(void *orig_ptr, size_t new_size)
 {
+    struct header *hdr = orig_ptr; // hdr starts pointing to headers
+    //hdr--;
+    size_t size = hdr->size;
+    int status = hdr->status;
+
+    if (new_size < size && status == FREE)
+    {
+        hdr->size = new_size;
+        hdr->status = IN_USE;
+
+        if (size - new_size >= 16) // if there are at least 16 bytes remaining !!!! MEMORY LEAK IF LESS THAN 16 BYTES REMAIN
+        {
+            struct header *new_hdr = hdr + 1 + (new_size / 8);
+            new_hdr->size = size - new_size - 8; // size - new size - new hdr
+            new_hdr->status = FREE;
+        }
+    }
+    return (void *)hdr;
 
     void *new_ptr = malloc(new_size);
     if (!new_ptr)
@@ -140,12 +194,14 @@ void heap_dump(const char *label)
     printf("Heap segment at %p - %p\n", heap_start, heap_end);
 
     struct header *hdr = (struct header *)(heap_start);
-    int size = hdr->size;
+    size_t size = hdr->size;
     int status = hdr->status;
+    char *str;
 
     while ((void *)hdr < heap_end)
     {
-        printf("Header Location: %p     Block Location: %p     Size: %d     Status: %d\n", hdr, hdr + 1, size, status);
+        str = status == 1 ? "FREE" : "IN_USE";
+        printf("Header Location: %p     Block Location: %p     Size: %d     Status: %s\n", hdr, hdr + 1, size, str);
 
         hdr += 1 + (size / 8); // +1 to move to data, +(size/8) to move to next header
         size = hdr->size;

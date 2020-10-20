@@ -53,22 +53,33 @@ void main(void);
 
 static void test_heap_dump(void)
 {
-    heap_dump("Empty heap");
+    char *a = malloc(24);
+    char *b = malloc(32);
+    char *c = malloc(64);
+    char *d = malloc(100);
+    heap_dump(" Pre free ");
+    free(c);
+    free(d);
+    free(b);
+    heap_dump(" Post free ");
+    free(a);
 
-    char *p = malloc(24);
-    heap_dump("After p = malloc(24)");
+    // heap_dump("Empty heap");
 
-    free(p);
-    heap_dump("After free(p)");
+    // char *p = malloc(24);
+    // heap_dump("After p = malloc(24)");
 
-    p = malloc(16);
-    heap_dump("After p = malloc(16)");
+    // free(p);
+    // heap_dump("After free(p)");
 
-    p = realloc(p, 32);
-    heap_dump("After p = realloc(p, 32)");
+    // p = malloc(16);
+    // heap_dump("After p = malloc(16)");
 
-    free(p);
-    heap_dump("After free(p)");
+    // p = realloc(p, 32);
+    // heap_dump("After p = realloc(p, 32)");
+
+    // free(p);
+    // heap_dump("After free(p)");
 }
 
 // static void test_heap_simple(void)
