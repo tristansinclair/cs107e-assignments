@@ -95,61 +95,63 @@ void *malloc(size_t nbytes)
         size = hdr->size;
         status = hdr->status;
     }
-    // now hdr will point to a space that can be worked with
 
-    if ((void *)hdr < heap_end) // if this is a recycled space....
+    if ((void *)hdr < heap_end) // if this is a recycled space.... (not at the end of the heap)
     {
         hdr->size = nbytes;   // write new size to hdr
         hdr->status = IN_USE; // set status to IN_USE
 
-        if (size - nbytes >= 8) // if there are at least 16 bytes remaining after our allocation... !!!! MEMORY LEAK IF LESS THAN 16 BYTES REMAIN
+        if (size - nbytes >= 8) // if there is enough space for a header or more (not a perfect match)
         {
             struct header *new_hdr = hdr + 1 + (nbytes / 8);
             new_hdr->size = size - nbytes - 8; // size - new size - new hdr
-            new_hdr->status = FREE;
+            free((void *)(new_hdr + 1));       // might as well check to clear up some more space here
+            //new_hdr->status = FREE;
         }
         return hdr + 1;
     }
 
-    size_t total_bytes = nbytes + 8; // total bytes needed to be allocated b/c header
+    // If we didn't find a recycled space, add to the end of the heap
+    size_t total_bytes = nbytes + 8;
 
-    void *prev_end = sbrk(total_bytes); // points to the last byte of the prev block
-    if ((int *)(prev_end) == NULL)      // if there isn't room for your request (heap is full)
+    int *prev_end = (int *)sbrk(total_bytes);
+    if (prev_end == NULL) // if heap is full
     {
         return NULL;
     }
-
-    // now if it isn't a recycled space
-    hdr = (struct header *)((char *)prev_end + 1); // hdr points to start point of malloc
-    hdr->size = nbytes;                            // stores bytes requested WITHOUT HEADER SIZE
+    hdr = (struct header *)prev_end; // hdr points to start point of malloc
+    hdr->size = nbytes;              // stores bytes requested WITHOUT HEADER SIZE
     hdr->status = IN_USE;
+    hdr++;
 
-    void *data_start = (void *)(hdr + 1); // (hdr + 1) is our data start, then cast to a void ptr
+    void *data_start = (void *)hdr;
 
     return data_start;
 }
 
+void clean_heap()
+{
+    heap_end = heap_start;
+}
+
 void free(void *ptr)
 {
+    // expects to receive ptr returned from malloc therefore it points to first byte of DATA not the header
     struct header *hdr = ptr;
-    hdr--; // moves back 8 bytes to the beg of the header
+    hdr--; // moves back to beginning of the header
+    hdr->status = FREE;
+
     size_t size = hdr->size;
-    int status = hdr->status;
-
-    if (status == IN_USE)
-    {
-        hdr->status = FREE;
-    }
-
     struct header *next_hdr = hdr + 1 + (size / 8);
     size_t next_size = next_hdr->size;
     int next_status = next_hdr->status;
 
-    while (next_status == FREE && (void *)next_hdr < heap_end)
+    while (next_status == FREE) //  && (void *)next_hdr < heap_end
     {
-        hdr->size = hdr->size + next_size + 8; // update first header size
+        hdr->size += next_size + 8; // update original header size
 
-        next_hdr += (1 + (next_size / 8));
+        // move to next header
+        next_hdr += 1 + (next_size / 8);
         next_size = next_hdr->size;
         next_status = next_hdr->status;
     }

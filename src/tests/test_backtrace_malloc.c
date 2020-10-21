@@ -57,12 +57,20 @@ static void test_heap_dump(void)
     char *b = malloc(32);
     char *c = malloc(64);
     char *d = malloc(100);
-    heap_dump(" Pre free ");
+    //char *e = malloc(75);
+    //char *f = malloc(23);
+    heap_dump("Heap test w/ multiple clears");
+
+    printf("\n\n a: %p   b: %p   c: %p   d: %p", a, b, c, d);
     free(c);
     free(d);
+    //free(f);
     free(b);
-    heap_dump(" Post free ");
-    free(a);
+
+    heap_dump("Heap test w/ multiple clears post clear");
+
+    //clean_heap();
+
 
     // heap_dump("Empty heap");
 
@@ -174,8 +182,8 @@ static void test_heap_dump(void)
 
 void main(void)
 {
-    uart_init();
-    uart_putstring("Start execute main() in tests/test_backtrace_malloc.c\n");
+    //uart_init();
+    //uart_putstring("Start execute main() in tests/test_backtrace_malloc.c\n");
 
     // test_name_of();
 
