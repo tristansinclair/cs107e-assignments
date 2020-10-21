@@ -20,7 +20,7 @@
 
 ## Assignment 3: strings and printf
 
-#### Basic functionality: `6.5/10.0`<!--assign3-basic-->
+#### Basic functionality: `8.25/10.0`<!--assign3-basic-->
 #### Extension functionality: `0/5.0`<!--assign3-extension-->
 #### Code quality: `ok`<!--assign3-style-->
 #### Test quality: `+`<!--assign3-test-->
