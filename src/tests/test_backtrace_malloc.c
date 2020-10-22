@@ -53,113 +53,238 @@ void main(void);
 
 static void test_heap_dump(void)
 {
-    char *a = malloc(24);
-    char *b = malloc(32);
-    char *c = malloc(64);
-    char *d = malloc(100);
-    //char *e = malloc(75);
-    //char *f = malloc(23);
-    heap_dump("Heap test w/ multiple clears");
+    heap_dump("Empty heap");
 
-    printf("\n\n a: %p   b: %p   c: %p   d: %p", a, b, c, d);
-    free(c);
-    free(d);
-    //free(f);
-    free(b);
+    char *p = malloc(24);
+    heap_dump("After p = malloc(24)");
 
-    heap_dump("Heap test w/ multiple clears post clear");
+    free(p);
+    heap_dump("After free(p)");
 
-    //clean_heap();
+    p = malloc(16);
+    heap_dump("After p = malloc(16)");
 
+    p = realloc(p, 32);
+    heap_dump("After p = realloc(p, 32)");
 
-    // heap_dump("Empty heap");
-
-    // char *p = malloc(24);
-    // heap_dump("After p = malloc(24)");
-
-    // free(p);
-    // heap_dump("After free(p)");
-
-    // p = malloc(16);
-    // heap_dump("After p = malloc(16)");
-
-    // p = realloc(p, 32);
-    // heap_dump("After p = realloc(p, 32)");
-
-    // free(p);
-    // heap_dump("After free(p)");
+    free(p);
+    heap_dump("After free(p)");
 }
 
-// static void test_heap_simple(void)
-// {
-//     char *s;
+static void test_heap_simple(void)
+{
+    char *s;
 
-//     s = malloc(6);
-//     memcpy(s, "hello", 6);
-//     assert(strcmp(s, "hello") == 0);
+    s = malloc(6);
+    memcpy(s, "hello", 6);
+    assert(strcmp(s, "hello") == 0);
 
-//     s = realloc(s, 12);
-//     strlcat(s, " world", 12);
-//     assert(strcmp(s, "hello world") == 0);
-//     free(s);
-// }
+    s = realloc(s, 12);
+    strlcat(s, " world", 12);
+    assert(strcmp(s, "hello world") == 0);
+    free(s);
+}
 
-// // array of dynamically-allocated strings, each
-// // string filled with repeated char, e.g. "A" , "BB" , "CCC"
-// // Examine each string, verify expected contents intact.
-// static void test_heap_multiple(void)
-// {
-//     int max_trials = 3;
-//     char *arr[max_trials*8];
+// array of dynamically-allocated strings, each
+// string filled with repeated char, e.g. "A" , "BB" , "CCC"
+// Examine each string, verify expected contents intact.
+static void test_heap_multiple(void)
+{
+    int max_trials = 3;
+    char *arr[max_trials * 8];
 
-//     for (int ntrials = 1; ntrials <= max_trials; ntrials++) {
-//         int n = (ntrials*8);
-//         for (int i = 0; i < n; i++) {
-//             int num_repeats = i + 1;
-//             char *ptr = malloc(num_repeats + 1);
-//             assert(ptr != NULL);
-//             assert((uintptr_t)ptr % 8 == 0); // verify 8-byte alignment
-//             memset(ptr, 'A' - 1 + num_repeats, num_repeats);
-//             ptr[num_repeats] = '\0';
-//             arr[i] = ptr;
-//         }
-//         heap_dump("After all allocations");
-//         for (int i = n-1; i >= 0; i--) {
-//             int len = strlen(arr[i]);
-//             char first = arr[i][0], last = arr[i][len -1];
-//             assert(first == 'A' - 1 + len);  // verify payload contents
-//             assert(first == last);
-//             free(arr[i]);
-//         }
-//         heap_dump("After all frees");
-//     }
-// }
+    for (int ntrials = 1; ntrials <= max_trials; ntrials++)
+    {
+        int n = (ntrials * 8);
+        for (int i = 0; i < n; i++)
+        {
+            int num_repeats = i + 1;
+            char *ptr = malloc(num_repeats + 1);
+            assert(ptr != NULL);
+            assert((uintptr_t)ptr % 8 == 0); // verify 8-byte alignment
+            memset(ptr, 'A' - 1 + num_repeats, num_repeats);
+            ptr[num_repeats] = '\0';
+            arr[i] = ptr;
+        }
+        heap_dump("After all allocations");
+        for (int i = n - 1; i >= 0; i--)
+        {
+            int len = strlen(arr[i]);
+            char first = arr[i][0], last = arr[i][len - 1];
+            assert(first == 'A' - 1 + len); // verify payload contents
+            assert(first == last);
+            free(arr[i]);
+        }
+        heap_dump("After all frees");
+    }
+}
 
-// #define max(x, y) ((x) > (y) ? (x) : (y))
+#define max(x, y) ((x) > (y) ? (x) : (y))
 
-// static void test_heap_recycle(int niter)
-// {
-//     extern int __bss_end__;
-//     void *heap_low = &__bss_end__, *heap_high = NULL;
+static void test_heap_recycle(int niter)
+{
+    extern int __bss_end__;
+    void *heap_low = &__bss_end__, *heap_high = NULL;
 
-//     size_t max_size = 1024, total = 0;
-//     void *p = malloc(1);
+    size_t max_size = 1024, total = 0;
+    void *p = malloc(1);
+    printf("Pointer P: %p", p);
+    heap_dump(" PRE - Recycle Test Dump ");
 
-//     for (int i = 0; i < niter; i++) {
-//         size_t size = rand() % max_size;
-//         void *q = malloc(size);
-//         p = realloc(p, size);
-//         total += 2*size;
-//         void *higher = (char *)max(p, q) + size;
-//         heap_high = max(heap_high, higher);
-//         free(q);
-//     }
-//     free(p);
-//     size_t extent = (char *)heap_high - (char *)heap_low;
-//     size_t percent = total > extent ? (100*total)/extent : 0;
-//     printf("\nRecycling report for %d iterations:\n", niter);
-//     printf("Serviced requests totaling %d bytes, heap extent is %d bytes. Recycled %d%%\n", total, extent, percent);
-// }
+    for (int i = 0; i < niter; i++)
+    {
+        size_t size = rand() % max_size;
+        void *q = malloc(size);
+        p = realloc(p, size);
+        total += 2 * size;
+        void *higher = (char *)max(p, q) + size;
+        heap_high = max(heap_high, higher);
+        free(q);
+    }
+    free(p);
+    heap_dump(" POST - Recycle Test Dump ");
+    size_t extent = (char *)heap_high - (char *)heap_low;
+    size_t percent = total > extent ? (100 * total) / extent : 0;
+    printf("\nRecycling report for %d iterations:\n", niter);
+    printf("Serviced requests totaling %d bytes, heap extent is %d bytes. Recycled %d%%\n", total, extent, percent);
+}
+
+#define roundup(x, n) (((x) + ((n)-1)) & (~((n)-1)))
+
+static unsigned int simple_rand(int seed)
+{
+    unsigned int m = 4294967296 / 2;
+    unsigned int a = 1103515245;
+    unsigned int c = 12345;
+    seed = (a * seed + c) % m;
+    return seed;
+}
+
+void simple_free_test(void)
+{
+    char *a = malloc(10);
+    char *b = malloc(20);
+    char *c = malloc(30);
+    char *d = malloc(40);
+    char *e = malloc(50);
+    char *f = malloc(60);
+
+    heap_dump("simple_free_test PRE");
+    printf("\na: %p   b: %p   c: %p   d: %p   e: %p   f: %p\n", a, b, c, d, e, f);
+    printf("Pointers freed (in order freed): d, c, b, f\n");
+    free(d);
+    free(c);
+    free(b);
+    heap_dump("simple_free_test MIDDLE");
+    free(f);
+    heap_dump("simple_free_test END");
+    free(e);
+    free(a);
+    heap_dump("simple_free_test COMPLETE CLEAR");
+}
+
+void advanced_free_test(void)
+{
+    char *a = malloc(10);
+    char *b = malloc(20);
+    char *c = malloc(30);
+    char *d = malloc(40);
+    char *e = malloc(50);
+    char *f = malloc(60);
+
+    heap_dump("advanced_free_test PRE");
+    printf("\na: %p   b: %p   c: %p   d: %p   e: %p   f: %p\n", a, b, c, d, e, f);
+    printf("Pointers freed (in order freed): d, c, b, f\n");
+    // next 3 reallocs leave a header w/ size = 0
+    realloc(d, 32);
+    realloc(c, 24);
+    realloc(b, 16);
+    heap_dump("advanced_free_test POST realloc");
+    free(d);
+    free(c);
+    free(b);
+    heap_dump("advanced_free_test POST free");
+}
+
+void simple_realloc_test(void)
+{
+    char *a = malloc(10);
+    char *b = malloc(20);
+    char *c = malloc(30);
+    char *d = malloc(40);
+    char *e = malloc(50);
+    char *f = malloc(60);
+
+    heap_dump("simple_realloc_test PRE");
+    printf("\na: %p   b: %p   c: %p   d: %p   e: %p   f: %p\n", a, b, c, d, e, f);
+    printf("Pointers freed (in order freed): d, c, b, f\n");
+    free(b);
+    free(c);
+    free(d);
+    heap_dump("simple_realloc_test FREES");
+    realloc((void *)b, 53);
+    heap_dump("simple_realloc_test POST REALLOC");
+}
+
+void realloc_without_room(void)
+{
+    char *a = malloc(10);
+    char *b = malloc(20);
+    char *c = malloc(30);
+    char *d = malloc(40);
+    char *e = malloc(50);
+    char *f = malloc(60);
+
+    heap_dump("realloc_without_room PRE");
+    printf("\na: %p   b: %p   c: %p   d: %p   e: %p   f: %p\n", a, b, c, d, e, f);
+    printf("Pointers freed (in order freed): d, c, b, f\n");
+    free(b);
+    free(c);
+    free(d);
+    heap_dump("realloc_without_room FREES");
+    realloc((void *)b, 321);
+    heap_dump("realloc_without_room POST REALLOC");
+}
+
+void test_malloc_and_free(void)
+{
+    int *ptrs = (int *)malloc(2000); // allocate space for 500 pointers
+    int *ptr = ptrs;
+
+    unsigned int seed = 123456789;
+    // malloc 500 items and store their addresses in our first malloc
+    for (int i = 0; i < 500; i++)
+    {
+        seed = simple_rand(seed) % 1000;
+        *ptr = (int *)malloc(seed);
+        ptr++;
+    }
+
+    void *start_ptr = *ptrs;
+    // free their addresses
+    for (int i = 0; i < 500; i++)
+    {
+        free((void *)*ptrs);
+        ptrs += 1;
+    }
+
+    //free(start_ptr);
+    //realloc(start_ptr, 200);
+
+    heap_dump("Malloc with randomish values");
+}
+
+void test_edge_cases(void)
+{
+    // If malloc cannot fulfill an allocation request, it returns NULL.
+    // Four valid, but oddball cases to consider are:
+    // malloc(0)
+    // realloc(NULL, size)
+    // realloc(ptr, 0)
+    // free(NULL)
+
+    assert(malloc(0) == NULL);
+}
 
 // void test_heap_redzones(void)
 // {
@@ -179,24 +304,37 @@ static void test_heap_dump(void)
 //     free(ptr);      // ptr is NOT ok
 // }
 
-
 void main(void)
 {
-    //uart_init();
-    //uart_putstring("Start execute main() in tests/test_backtrace_malloc.c\n");
+    uart_init();
+    uart_putstring("Start execute main() in tests/test_backtrace_malloc.c\n");
+
+    printf("\n\n\n================ BACKTRACE TESTING ================\n");
 
     // test_name_of();
 
     // test_backtrace_simple();
     // test_backtrace_simple(); // Again so you can see the main offset change!
-    // test_backtrace_complex(7);  // Slightly tricky backtrace
+    // test_backtrace_complex(7);  Slightly tricky backtrace
 
-    test_heap_dump();
+    printf("\n\n\n================ HEAP TESTING ================\n");
 
+    printf("++++++ Heap Free Tests ++++++\n");
+    //simple_free_test();
+    //advanced_free_test();
+    //simple_realloc_test();
+    //realloc_without_room();
+    //test_edge_cases();
+    //test_malloc_and_free();
+
+    //test_heap_dump();
+    // reset_heap();
     // test_heap_simple();
+    // reset_heap();
     // test_heap_multiple();
-    // test_heap_recycle(20);
-    
+    // reset_heap();
+    //test_heap_recycle(20);
+
     //test_heap_redzones(); // DO NOT USE unless you implemented red zone protection
 
     uart_putstring("\nSuccessfully finished executing main() in tests/test_backtrace_malloc.c\n");

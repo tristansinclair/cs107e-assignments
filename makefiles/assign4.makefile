@@ -34,7 +34,7 @@ TEST 		= build/bin/test_backtrace_malloc.bin
 OBJECTS = $(addprefix build/obj/, $(MY_MODULES) start.o cstart.o nameless.o)
 
 # C compiler.
-CFLAGS_EXTRA = -Werror
+# CFLAGS_EXTRA = -Werror
 CFLAGS 	= -I$(CS107E)/include -Iinclude -Og -g -Wall -std=c99 -ffreestanding $(CFLAGS_EXTRA)
 CFLAGS += -mapcs-frame -fno-omit-frame-pointer -mpoke-function-name -Wpointer-arith
 LDFLAGS	= -nostdlib -T src/boot/memmap -L$(CS107E)/lib

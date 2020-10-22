@@ -71,6 +71,17 @@ enum
     FREE = 1
 };
 
+// static void reuse(struct header *hdr, size_t original_size, size_t new_size)
+// {
+//     struct header *new_hdr = hdr + 1 + (new_size / 8);
+
+//     size_t bigger = (original_size > new_size) ? original_size : new_size;
+//     size_t smaller = (original_size > new_size) ? new_size : original_size;
+
+//     new_hdr->size = size - nbytes - 8; // size - new size - new hdr
+//     new_hdr->status = FREE;
+// }
+
 void *malloc(size_t nbytes)
 {
     if (nbytes == 0)
@@ -89,26 +100,26 @@ void *malloc(size_t nbytes)
     // total_bytes <= size
     // hdr < heap_end
 
-    while (status == IN_USE && nbytes > size && (void *)hdr < heap_end) // search for available space
+    while ((void *)hdr < heap_end) // search our heap for a space
     {
+        if (status == FREE && nbytes < size)
+        {
+            hdr->size = nbytes;   // write new size to hdr
+            hdr->status = IN_USE; // set status to IN_USE
+
+            if (size - nbytes >= 8) // if there is enough space for a header or more (not a perfect match)
+            {
+                struct header *new_hdr = hdr + 1 + (nbytes / 8);
+                new_hdr->size = size - nbytes - 8; // size - new size - new hdr
+                new_hdr->status = FREE;
+                //free((void *)(new_hdr + 1)); // might as well check to clear up some more space here
+            }
+            return hdr + 1;
+        }
+
         hdr += 1 + (size / 8);
         size = hdr->size;
         status = hdr->status;
-    }
-
-    if ((void *)hdr < heap_end) // if this is a recycled space.... (not at the end of the heap)
-    {
-        hdr->size = nbytes;   // write new size to hdr
-        hdr->status = IN_USE; // set status to IN_USE
-
-        if (size - nbytes >= 8) // if there is enough space for a header or more (not a perfect match)
-        {
-            struct header *new_hdr = hdr + 1 + (nbytes / 8);
-            new_hdr->size = size - nbytes - 8; // size - new size - new hdr
-            free((void *)(new_hdr + 1));       // might as well check to clear up some more space here
-            //new_hdr->status = FREE;
-        }
-        return hdr + 1;
     }
 
     // If we didn't find a recycled space, add to the end of the heap
@@ -129,65 +140,110 @@ void *malloc(size_t nbytes)
     return data_start;
 }
 
-void clean_heap()
-{
-    heap_end = heap_start;
-}
-
 void free(void *ptr)
 {
+    if (ptr == NULL)
+    {
+        return;
+    }
     // expects to receive ptr returned from malloc therefore it points to first byte of DATA not the header
     struct header *hdr = ptr;
-    hdr--; // moves back to beginning of the header
-    hdr->status = FREE;
+    hdr--;              // moves back to beginning of the header
+    hdr->status = FREE; // set hdr
 
     size_t size = hdr->size;
+
+    // search for next_hdrs that are free as well
     struct header *next_hdr = hdr + 1 + (size / 8);
     size_t next_size = next_hdr->size;
     int next_status = next_hdr->status;
 
-    while (next_status == FREE) //  && (void *)next_hdr < heap_end
+    while ((void *)next_hdr < heap_end)
     {
-        hdr->size += next_size + 8; // update original header size
-
+        if (next_status == FREE)
+        {
+            hdr->size += next_size + 8; // update original header size
+        }
+        else if (next_status == IN_USE && next_size == 0)
+        {
+            hdr->size += 8;
+        } else
+        {
+            break;
+        }
         // move to next header
-        next_hdr += 1 + (next_size / 8);
+        next_hdr = hdr + 1 + (hdr->size / 8);
         next_size = next_hdr->size;
         next_status = next_hdr->status;
+    }
+
+    if ((void *)(hdr + 1 + (hdr->size / 8)) >= heap_end) // removes any FREE block at end of the heap
+    {
+        heap_end = hdr;
     }
 }
 
 void *realloc(void *orig_ptr, size_t new_size)
 {
-    struct header *hdr = orig_ptr; // hdr starts pointing to headers
-    //hdr--;
-    size_t size = hdr->size;
-    int status = hdr->status;
+    new_size = roundup(new_size, 8);
 
-    if (new_size < size && status == FREE)
+    if ((int *)orig_ptr == NULL)
     {
-        hdr->size = new_size;
+        return malloc(new_size);
+    }
+
+    if (new_size == 0)
+    {
+        free(orig_ptr);
+        return NULL;
+    }
+
+    struct header *hdr = orig_ptr; // orig_ptr returned from malloc
+    hdr--;                         // move back to beginning of header
+    size_t orig_size = hdr->size;
+
+    // if (orig_size == new_size)
+    // {
+    //     hdr->status = IN_USE;
+    //     return orig_ptr;
+    // }
+
+    // Let's look for free space!
+    struct header *next_hdr = hdr + 1 + (orig_size / 8); //  next header to investigate
+    size_t available_space = 0;
+
+    if (next_hdr->status == FREE)
+    {
+        free(next_hdr + 1); // free any additional space there could be
+        available_space = next_hdr->size + 8;
+    }
+
+    if (orig_size + available_space >= new_size) // if we have space for the reallocation HERE
+    {
+        hdr->size = new_size; // reallocate
         hdr->status = IN_USE;
 
-        if (size - new_size >= 16) // if there are at least 16 bytes remaining !!!! MEMORY LEAK IF LESS THAN 16 BYTES REMAIN
+        if ((orig_size + available_space) - new_size >= 8) // extra space
         {
             struct header *new_hdr = hdr + 1 + (new_size / 8);
-            new_hdr->size = size - new_size - 8; // size - new size - new hdr
+            new_hdr->size = ((orig_size + available_space) - new_size) - 8; // leftover space - 8 byte header
             new_hdr->status = FREE;
         }
+        return orig_ptr;
     }
-    return (void *)hdr;
 
     void *new_ptr = malloc(new_size);
-    if (!new_ptr)
-        return NULL;
-
-    // ideally would copy the min of new_size and old_size, but this allocator
-    // doesn't know the old_size. Why not?
-    // Why is it "safe" (but not efficient) to copy new_size bytes?
-    memcpy(new_ptr, orig_ptr, new_size);
+    memcpy(new_ptr, orig_ptr, orig_size);
     free(orig_ptr);
+
     return new_ptr;
+}
+
+void reset_heap(void)
+{
+    size_t n = (unsigned int)((char *)heap_end - (char *)heap_start);
+    memset(heap_start, 0, n);
+    heap_end = heap_start;
 }
 
 void heap_dump(const char *label)
@@ -200,6 +256,10 @@ void heap_dump(const char *label)
     int status = hdr->status;
     char *str;
 
+    size_t total_bytes_allocated = 0;
+    size_t total_bytes_allocated_hdrs = 0;
+    size_t allocations_detected = 0;
+
     while ((void *)hdr < heap_end)
     {
         str = status == 1 ? "FREE" : "IN_USE";
@@ -208,7 +268,13 @@ void heap_dump(const char *label)
         hdr += 1 + (size / 8); // +1 to move to data, +(size/8) to move to next header
         size = hdr->size;
         status = hdr->status;
+
+        total_bytes_allocated += size;
+        total_bytes_allocated_hdrs += size + 8;
+        allocations_detected++;
     }
+
+    printf("TOTAL BYTES ALLOCATED: %d (including hdrs): %d TOTAL BLOCKS: %d\n", total_bytes_allocated, total_bytes_allocated_hdrs, allocations_detected);
 
     printf("----------  END DUMP (%s) ----------\n", label);
 }
