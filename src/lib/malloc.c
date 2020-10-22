@@ -185,12 +185,6 @@ void *realloc(void *orig_ptr, size_t new_size)
     hdr--;                         // move back to beginning of header
     size_t orig_size = hdr->size;
 
-    // if (orig_size == new_size)
-    // {
-    //     hdr->status = IN_USE;
-    //     return orig_ptr;
-    // }
-
     // Let's look for free space!
     struct header *next_hdr = hdr + 1 + (orig_size / 8); //  next header to investigate
     size_t available_space = 0;
