@@ -71,17 +71,6 @@ enum
     FREE = 1
 };
 
-// static void reuse(struct header *hdr, size_t original_size, size_t new_size)
-// {
-//     struct header *new_hdr = hdr + 1 + (new_size / 8);
-
-//     size_t bigger = (original_size > new_size) ? original_size : new_size;
-//     size_t smaller = (original_size > new_size) ? new_size : original_size;
-
-//     new_hdr->size = size - nbytes - 8; // size - new size - new hdr
-//     new_hdr->status = FREE;
-// }
-
 void *malloc(size_t nbytes)
 {
     if (nbytes == 0)
@@ -95,11 +84,6 @@ void *malloc(size_t nbytes)
     size_t size = hdr->size;                            // size of current block
     int status = hdr->status;                           // status of current block
 
-    // In order to recycle:
-    // status == FREE
-    // total_bytes <= size
-    // hdr < heap_end
-
     while ((void *)hdr < heap_end) // search our heap for a space
     {
         if (status == FREE && nbytes < size)
@@ -112,7 +96,6 @@ void *malloc(size_t nbytes)
                 struct header *new_hdr = hdr + 1 + (nbytes / 8);
                 new_hdr->size = size - nbytes - 8; // size - new size - new hdr
                 new_hdr->status = FREE;
-                //free((void *)(new_hdr + 1)); // might as well check to clear up some more space here
             }
             return hdr + 1;
         }
@@ -130,8 +113,7 @@ void *malloc(size_t nbytes)
     {
         return NULL;
     }
-    hdr = (struct header *)prev_end; // hdr points to start point of malloc
-    hdr->size = nbytes;              // stores bytes requested WITHOUT HEADER SIZE
+    hdr->size = nbytes; // stores bytes requested WITHOUT HEADER SIZE
     hdr->status = IN_USE;
     hdr++;
 
@@ -167,7 +149,8 @@ void free(void *ptr)
         else if (next_status == IN_USE && next_size == 0)
         {
             hdr->size += 8;
-        } else
+        }
+        else
         {
             break;
         }
@@ -262,16 +245,16 @@ void heap_dump(const char *label)
 
     while ((void *)hdr < heap_end)
     {
+        total_bytes_allocated += size;
+        total_bytes_allocated_hdrs += size + 8;
+        allocations_detected++;
+
         str = status == 1 ? "FREE" : "IN_USE";
         printf("Header Location: %p     Block Location: %p     Size: %d     Status: %s\n", hdr, hdr + 1, size, str);
 
         hdr += 1 + (size / 8); // +1 to move to data, +(size/8) to move to next header
         size = hdr->size;
         status = hdr->status;
-
-        total_bytes_allocated += size;
-        total_bytes_allocated_hdrs += size + 8;
-        allocations_detected++;
     }
 
     printf("TOTAL BYTES ALLOCATED: %d (including hdrs): %d TOTAL BLOCKS: %d\n", total_bytes_allocated, total_bytes_allocated_hdrs, allocations_detected);

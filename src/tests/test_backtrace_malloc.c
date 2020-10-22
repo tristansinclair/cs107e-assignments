@@ -11,45 +11,45 @@
 
 void main(void);
 
-// static void test_name_of(void)
-// {
-//     const char *name;
+static void test_name_of(void)
+{
+    const char *name;
 
-//     name = name_of((uintptr_t)main);
-//     assert(strcmp(name, "main") == 0);
-//     name = name_of((uintptr_t)uart_init);
-//     assert(strcmp(name, "uart_init") == 0);
-//     name = name_of((uintptr_t)mystery); // function compiled without embedded name
-//     assert(strcmp(name, "???") == 0);
-// }
+    name = name_of((uintptr_t)main);
+    assert(strcmp(name, "main") == 0);
+    name = name_of((uintptr_t)uart_init);
+    assert(strcmp(name, "uart_init") == 0);
+    name = name_of((uintptr_t)mystery); // function compiled without embedded name
+    assert(strcmp(name, "???") == 0);
+}
 
-// static void test_backtrace_simple(void)
-// {
-//     frame_t f[2];
-//     int frames_filled = backtrace(f, 2);
+static void test_backtrace_simple(void)
+{
+    frame_t f[2];
+    int frames_filled = backtrace(f, 2);
 
-//     assert(frames_filled == 2);
-//     assert(strcmp(f[0].name, "test_backtrace_simple") == 0);
-//     assert(f[0].resume_addr == (uintptr_t)test_backtrace_simple + f[0].resume_offset);
-//     assert(strcmp(f[1].name, "main") == 0);
-//     assert(f[1].resume_addr == (uintptr_t)main + f[1].resume_offset);
-//     printf("Here is a simple backtrace:\n");
-//     print_frames(f, frames_filled);
-//     printf("\n");
-// }
+    assert(frames_filled == 2);
+    assert(strcmp(f[0].name, "test_backtrace_simple") == 0);
+    assert(f[0].resume_addr == (uintptr_t)test_backtrace_simple + f[0].resume_offset);
+    assert(strcmp(f[1].name, "main") == 0);
+    assert(f[1].resume_addr == (uintptr_t)main + f[1].resume_offset);
+    printf("Here is a simple backtrace:\n");
+    print_frames(f, frames_filled);
+    printf("\n");
+}
 
-// static int recursion_fun(int n)
-// {
-//     if (n == 0)
-//         return mystery();   // look in nameless.c
-//     else
-//         return 1 + recursion_fun(n-1);
-// }
+static int recursion_fun(int n)
+{
+    if (n == 0)
+        return mystery();   // look in nameless.c
+    else
+        return 1 + recursion_fun(n-1);
+}
 
-// static int test_backtrace_complex(int n)
-// {
-//     return recursion_fun(n);
-// }
+static int test_backtrace_complex(int n)
+{
+    return recursion_fun(n);
+}
 
 static void test_heap_dump(void)
 {
@@ -128,23 +128,19 @@ static void test_heap_recycle(int niter)
 
     size_t max_size = 1024, total = 0;
     void *p = malloc(1);
-    printf("Pointer P: %p", p);
-    heap_dump(" PRE - Recycle Test Dump ");
 
-    for (int i = 0; i < niter; i++)
-    {
+    for (int i = 0; i < niter; i++) {
         size_t size = rand() % max_size;
         void *q = malloc(size);
         p = realloc(p, size);
-        total += 2 * size;
+        total += 2*size;
         void *higher = (char *)max(p, q) + size;
         heap_high = max(heap_high, higher);
         free(q);
     }
     free(p);
-    heap_dump(" POST - Recycle Test Dump ");
     size_t extent = (char *)heap_high - (char *)heap_low;
-    size_t percent = total > extent ? (100 * total) / extent : 0;
+    size_t percent = total > extent ? (100*total)/extent : 0;
     printf("\nRecycling report for %d iterations:\n", niter);
     printf("Serviced requests totaling %d bytes, heap extent is %d bytes. Recycled %d%%\n", total, extent, percent);
 }
@@ -246,6 +242,34 @@ void realloc_without_room(void)
     heap_dump("realloc_without_room POST REALLOC");
 }
 
+void realloc_data_copying(void)
+{
+    char *a = malloc(100);
+    char *b = malloc(200);
+    char *c = malloc(300);
+    char *d = malloc(400);
+    char *e = malloc(500);
+    char *f = malloc(600);
+
+    memset(b, 'T', 8);
+
+    printf("\na: %p   b: %p   c: %p   d: %p   e: %p   f: %p\n", a, b, c, d, e, f);
+    heap_dump("realloc_data_copying PRE");
+
+    // realloc data check w/ room
+    free(c);
+    realloc(b, 350);
+    assert(strcmp(b, "TTTTTTTT") == 0);
+    printf("%s\n", b);
+    heap_dump("realloc_data_copying w/room");
+
+    // realloc data check w/o room
+    char *new_b = realloc(b, 2000);
+    printf("%s\n", new_b);
+    assert(strcmp(new_b, "TTTTTTTT") == 0);
+    heap_dump("realloc_data_copying w/o room");
+}
+
 void test_malloc_and_free(void)
 {
     int *ptrs = (int *)malloc(2000); // allocate space for 500 pointers
@@ -256,11 +280,11 @@ void test_malloc_and_free(void)
     for (int i = 0; i < 500; i++)
     {
         seed = simple_rand(seed) % 1000;
-        *ptr = (int *)malloc(seed);
+        *ptr = (int)(malloc(seed));
         ptr++;
     }
 
-    void *start_ptr = *ptrs;
+    void *start_ptr = (void *)*ptrs;
     // free their addresses
     for (int i = 0; i < 500; i++)
     {
@@ -268,8 +292,7 @@ void test_malloc_and_free(void)
         ptrs += 1;
     }
 
-    //free(start_ptr);
-    //realloc(start_ptr, 200);
+    free(start_ptr);
 
     heap_dump("Malloc with randomish values");
 }
@@ -283,7 +306,48 @@ void test_edge_cases(void)
     // realloc(ptr, 0)
     // free(NULL)
 
-    assert(malloc(0) == NULL);
+    char *a = malloc(100);
+    char *b = malloc(200);
+    char *c = malloc(300);
+    char *d = malloc(400);
+    char *e = malloc(500);
+    char *f = malloc(600);
+    printf("\na: %p   b: %p   c: %p   d: %p   e: %p   f: %p\n", a, b, c, d, e, f);
+
+    heap_dump("test_edge_cases PRE");
+    
+    assert(malloc(0) == NULL); // malloc 0
+    assert(malloc(0xfffffff) == NULL); //  allocated more than the heap size
+
+    memset(b, 'T', 8);
+
+    realloc(f, 0);
+    realloc(a, 0);
+    char *new_b = realloc(b, 400);
+    
+    assert(strcmp(new_b, b) == 0);
+
+    heap_dump("test_edge_cases POST");
+}
+
+void test_malloc_issues(void)
+{
+    void *p = malloc(1);
+    printf("Pointer P: %p", p);
+    heap_dump(" PRE - Malloc Issues ");
+
+    malloc(30);
+    malloc(542);
+    void *q = malloc(923);
+    malloc(21);
+    free(q);
+    void *s = malloc(317);
+    malloc(129);
+    malloc(17);
+    free(s);
+    malloc(1231);
+
+    heap_dump(" POST - Malloc Issues ");
 }
 
 // void test_heap_redzones(void)
@@ -309,31 +373,46 @@ void main(void)
     uart_init();
     uart_putstring("Start execute main() in tests/test_backtrace_malloc.c\n");
 
-    printf("\n\n\n================ BACKTRACE TESTING ================\n");
+    printf("\n================ BACKTRACE TESTING ================\n\n");
 
-    // test_name_of();
+    test_name_of();
+    test_backtrace_simple();
+    test_backtrace_simple(); // Again so you can see the main offset change!
+    test_backtrace_complex(7);  // Slightly tricky backtrace
 
-    // test_backtrace_simple();
-    // test_backtrace_simple(); // Again so you can see the main offset change!
-    // test_backtrace_complex(7);  Slightly tricky backtrace
+    printf("\n\n\n================ HEAP TESTING ================\n\n");
 
-    printf("\n\n\n================ HEAP TESTING ================\n");
+    printf("\n\n++++++ Heap Edge/Issue Tests ++++++\n");
+    test_edge_cases();
+    reset_heap();
+    test_malloc_issues();
+    reset_heap();
 
-    printf("++++++ Heap Free Tests ++++++\n");
-    //simple_free_test();
-    //advanced_free_test();
-    //simple_realloc_test();
-    //realloc_without_room();
-    //test_edge_cases();
-    //test_malloc_and_free();
+    printf("\n\n++++++ Heap FREE Tests ++++++\n");
+    simple_free_test();
+    reset_heap();
+    advanced_free_test();
+    reset_heap();
+    test_malloc_and_free();
+    reset_heap();
 
-    //test_heap_dump();
-    // reset_heap();
-    // test_heap_simple();
-    // reset_heap();
-    // test_heap_multiple();
-    // reset_heap();
-    //test_heap_recycle(20);
+    printf("\n\n++++++ Heap REALLOC Tests ++++++\n");
+    simple_realloc_test();
+    reset_heap();
+    realloc_without_room();
+    reset_heap();
+    realloc_data_copying();
+    reset_heap();
+
+    printf("\n\n++++++ Heap INCLUDED Tests ++++++\n");
+    test_heap_dump();
+    reset_heap();
+    test_heap_simple();
+    reset_heap();
+    test_heap_multiple();
+    reset_heap();
+    test_heap_recycle(20);
+    reset_heap();
 
     //test_heap_redzones(); // DO NOT USE unless you implemented red zone protection
 

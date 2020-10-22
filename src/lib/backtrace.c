@@ -3,12 +3,12 @@
 
 const char *name_of(uintptr_t fn_start_addr)
 {
-    uint32_t value = *(uint32_t *)(fn_start_addr - 4); // 4 bytes before the first instruction
+    uintptr_t value = *(uintptr_t *)(fn_start_addr - 4); // 4 bytes before the first instruction
 
     if ((value >> 24) == 0xff) // most significant byte
     {
-        uint32_t length = (value & ~0xff000000);         // name has length
-        char *name = (char *)(fn_start_addr)-length - 4; // name is at start address - length - 4
+        int length = (value & ~0xff000000);          // name has length
+        char *name = ((char *)fn_start_addr) - length - 4; // name is at start address - length - 4
         return name;
     }
     else
