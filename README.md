@@ -27,10 +27,10 @@
 
 ## Assignment 4: backtrace and malloc
 
-#### Basic functionality: <!--assign4-basic-->
-#### Extension functionality: <!--assign4-extension-->
-#### Code quality: <!--assign4-style-->
-#### Test quality: <!--assign4-test-->
+#### Basic functionality: `9.0/10.0`<!--assign4-basic-->
+#### Extension functionality: `0/5.0`<!--assign4-extension-->
+#### Code quality: `+`<!--assign4-style-->
+#### Test quality: `+`<!--assign4-test-->
 
 ## Assignment 5: keyboard and shell
 
