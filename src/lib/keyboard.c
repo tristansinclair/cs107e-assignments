@@ -30,6 +30,7 @@ static void wait_for_falling_clock_edge(void)
     }
 }
 
+// from Peter
 static int has_odd_parity(unsigned char code)
 {
     unsigned int sum = 0;
@@ -41,6 +42,7 @@ static int has_odd_parity(unsigned char code)
     return sum;
 }
 
+// from Phil
 static void write_bit(int nbit, unsigned char code)
 {
     switch (nbit)
@@ -66,7 +68,7 @@ static void write_bit(int nbit, unsigned char code)
         break;
     }
 }
-
+// from Phil
 static void ps2_write(unsigned char command)
 {
     gpio_set_output(CLK); // swap GPIO from read to write
@@ -93,6 +95,8 @@ static int read_bit(void)
     // wait until clock reads high, then wait until clock reads low
     // now read data
     wait_for_falling_clock_edge();
+
+
     return gpio_read(DATA);
 }
 
@@ -108,25 +112,46 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     DATA = data_gpio;
     gpio_set_input(DATA);
     gpio_set_pullup(DATA);
+
+    keyboard_read_scancode(); //  throw away final [aa] after reset
 }
+
+//static int timer = 0;
 
 unsigned char keyboard_read_scancode(void)
 {
     unsigned char scancode = 0;
-    while (read_bit() != 0)
+
+    start:
+    scancode = 0;
+
+    while (read_bit() != 0) // while not start bit
     {
         scancode = 0;
     }
-    for (int i = 0; i < 8; i++)
+    // begin reading data bits
+    for (int i = 0; i < 8; i++) // read in byte of data
     {
         scancode |= (read_bit() << i);
+        // timer += timer_get_ticks();
+        // if (timer > 300) {
+        //     goto start;
+        // }
+        // timer = 0;
     }
 
-    int parity = read_bit();
-    if (has_odd_parity(parity) == 0)
-    {
-    }
-    //int stop = read_bit();
+    // unsigned char parity_bit = read_bit(); // next bit is parity
+    read_bit();
+    // if (has_odd_parity(parity_bit) % 2 == 0)
+    // {
+    //     goto start;
+    // }
+    read_bit(); // next bit is stop bit == 1
+    // if (scancode == 0xAA) {
+    //     return 0;
+    // }
+
+    // printf("Parity: %d\n", parity);
 
     return scancode;
 }
@@ -136,16 +161,18 @@ key_action_t keyboard_read_sequence(void)
     key_action_t action;
     unsigned char scancode = keyboard_read_scancode();
 
-    if (scancode == PS2_CODE_EXTENDED)
+    // check for EXTENDED code
+    if (scancode == PS2_CODE_EXTENDED) // [0xE0]
     {
-        scancode = keyboard_read_scancode();
+        scancode = keyboard_read_scancode(); // look at next code
     }
-    if (scancode == PS2_CODE_RELEASE)
+    // now check for RELEASE code
+    if (scancode == PS2_CODE_RELEASE) // [0xF0]
     {
         action.what = KEY_RELEASE;
-        action.keycode = keyboard_read_scancode();
+        action.keycode = keyboard_read_scancode(); //  next code is keycode
     }
-    else
+    else // if it isn't a release (single scancode)
     {
         action.what = KEY_PRESS;
         action.keycode = scancode;
@@ -154,15 +181,128 @@ key_action_t keyboard_read_sequence(void)
     return action;
 }
 
+keyboard_modifiers_t keyboard_modifier_check(key_action_t keypress, keyboard_modifiers_t modifiers)
+{
+    // KEYBOARD_MOD_SHIFT = 1 << 0
+    if (ps2_keys[keypress.keycode].ch == PS2_KEY_SHIFT)
+    {
+        if (keypress.what == KEY_PRESS)
+        {
+            modifiers |= KEYBOARD_MOD_SHIFT;
+        }
+        else
+        {
+            modifiers &= ~KEYBOARD_MOD_SHIFT;
+        }
+    }
+    // KEYBOARD_MOD_ALT = 1 << 1
+    if (ps2_keys[keypress.keycode].ch == PS2_KEY_ALT)
+    {
+        if (keypress.what == KEY_PRESS)
+        {
+            modifiers |= KEYBOARD_MOD_ALT;
+        }
+        else
+        {
+            modifiers &= ~KEYBOARD_MOD_ALT;
+        }
+    }
+    // KEYBOARD_MOD_CTRL = 1 << 2
+    if (ps2_keys[keypress.keycode].ch == PS2_KEY_CTRL)
+    {
+        if (keypress.what == KEY_PRESS)
+        {
+            modifiers |= KEYBOARD_MOD_CTRL;
+        }
+        else
+        {
+            modifiers &= ~KEYBOARD_MOD_CTRL;
+        }
+    }
+
+    /* ------------- LOCKING MODIFIERS ------------- */
+    // KEYBOARD_MOD_CAPS_LOCK = 1 << 3
+    if (ps2_keys[keypress.keycode].ch == PS2_KEY_CAPS_LOCK)
+    {
+        if (keypress.what == KEY_PRESS)
+        {
+            if (modifiers & KEYBOARD_MOD_CAPS_LOCK)
+            {
+                modifiers &= ~KEYBOARD_MOD_CAPS_LOCK;
+            }
+            else
+            {
+                modifiers |= KEYBOARD_MOD_CAPS_LOCK;
+            }
+        }
+    }
+    // KEYBOARD_MOD_SCROLL_LOCK = 1 << 4
+    if (ps2_keys[keypress.keycode].ch == PS2_KEY_SCROLL_LOCK)
+    {
+        if (keypress.what == KEY_PRESS)
+        {
+            if (modifiers & KEYBOARD_MOD_SCROLL_LOCK)
+            {
+                modifiers &= ~KEYBOARD_MOD_SCROLL_LOCK;
+            }
+            else
+            {
+                modifiers |= KEYBOARD_MOD_SCROLL_LOCK;
+            }
+        }
+    }
+    // KEYBOARD_MOD_NUM_LOCK = 1 << 5
+    if (ps2_keys[keypress.keycode].ch == PS2_KEY_NUM_LOCK)
+    {
+        if (keypress.what == KEY_PRESS)
+        {
+            if (modifiers & KEYBOARD_MOD_NUM_LOCK)
+            {
+                modifiers &= ~KEYBOARD_MOD_NUM_LOCK;
+            }
+            else
+            {
+                modifiers |= KEYBOARD_MOD_NUM_LOCK;
+            }
+        }
+    }
+
+    return modifiers;
+}
+
 key_event_t keyboard_read_event(void)
 {
-    // TODO: Your code here
     key_event_t event;
+    static keyboard_modifiers_t modifiers = 0b0; // 0 = off, 1 = on for each modifier
+
+    key_action_t keypress = keyboard_read_sequence();         // read in keypress
+    modifiers = keyboard_modifier_check(keypress, modifiers); // add/delete modifiers
+
+    event.modifiers = modifiers;
+    event.action = keypress;
+    event.key = ps2_keys[keypress.keycode];
+
     return event;
 }
 
 unsigned char keyboard_read_next(void)
 {
-    // TODO: Your code here
-    return '!';
+    key_event_t event = keyboard_read_event();
+
+    if(event.action.what == KEY_RELEASE)
+      continue;
+      
+    unsigned char keycode = event.action.keycode;
+    //keyboard_modifiers_t modifiers = event.modifiers;
+    unsigned char character = 0;
+    if (event.action.what == KEY_PRESS) {
+        character = ps2_keys[keycode].ch;
+    }
+
+    // if (modifiers == 1)
+    // {
+    //     character = ps2_keys[keycode].other_ch;
+    // }
+
+    return character;
 }
