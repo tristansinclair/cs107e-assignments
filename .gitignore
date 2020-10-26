@@ -8,5 +8,5 @@
 *.list
 *.o
 include/test-framework.h
-logs/*
+.logs/*
 Makefile
