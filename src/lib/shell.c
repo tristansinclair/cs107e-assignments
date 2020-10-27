@@ -16,7 +16,8 @@ static const command_t commands[] = {
     {"help", "<cmd> prints a list of commands or description of cmd", cmd_help},
     {"echo", "<...> echos the user input to the screen", cmd_echo},
     {"reboot", "< > reboots the Raspberry Pi back to the bootloader", cmd_reboot},
-    {"peek", "<addr> prints the contents (4 bytes) of memory at address", cmd_peek}};
+    {"peek", "<addr> prints the contents (4 bytes) of memory at address", cmd_peek},
+    {"poke", "<addr> <value> stores `value` into the memory at `address`", cmd_poke}};
 
 const size_t COMMAND_COUNT = (sizeof(commands) / sizeof(commands[0]));
 
@@ -104,35 +105,50 @@ int cmd_peek(int argc, const char *argv[])
         shell_printf("error: peek cannot convert '%s'\n", argv[1]);
         return 1;
     }
-
     unsigned int value = *(unsigned int *)address;
 
-    shell_printf("%p:   %x\n", address, value);
+    shell_printf("%p:   0x%x\n", address, value);
     return 0;
 }
-int cmd_poke(int argc, const char *argv[]{
+
+int cmd_poke(int argc, const char *argv[])
+{
     if (argc < 3)
     {
         shell_printf("error: poke requires 2 arguments [address] and [value]\n");
         return 1;
     }
 
-    const char *endptr;
-    void *address = (void *)strtonum(argv[1], &endptr);
+    const char *address_endptr;
+    unsigned int *address = (unsigned int *)strtonum(argv[1], &address_endptr);
 
-    if (*endptr != 0)
+    const char *value_endptr;
+    unsigned int value = strtonum(argv[2], &value_endptr);
+
+    if (*address_endptr != 0)
     {
         shell_printf("error: poke cannot convert '%s'\n", argv[1]);
         return 1;
     }
-    if ((int)address % 4 != 0)
+
+    if (*value_endptr != 0)
     {
-        //shell_printf("(int)address = %x\n", (int)address);
-        shell_printf("error: peek address is not 4-byte aligned\n");
+        shell_printf("error: poke cannot convert '%s'\n", argv[2]);
         return 1;
     }
 
+    if ((int)address % 4 != 0)
+    {
+        //shell_printf("(int)address = %x\n", (int)address);
+        shell_printf("error: poke address is not 4-byte aligned\n");
+        return 1;
+    }
+
+    *address = value;
+
+    return 0;
 }
+
 void shell_init(formatted_fn_t print_fn)
 {
     shell_printf = print_fn;
