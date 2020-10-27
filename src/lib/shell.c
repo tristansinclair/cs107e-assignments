@@ -3,6 +3,8 @@
 #include "uart.h"
 #include "printf.h"
 #include "keyboard.h"
+#include "strings.h"
+#include "malloc.h"
 
 #define LINE_LEN 80
 
@@ -12,6 +14,27 @@ static const command_t commands[] = {
     {"help", "<cmd> prints a list of commands or description of cmd", cmd_help},
     {"echo", "<...> echos the user input to the screen", cmd_echo},
 };
+
+const size_t COMMAND_COUNT = (sizeof(commands) / sizeof(commands[0]));
+
+// typedef struct _command_struct {
+//     const char *name;
+//     const char *description;
+//     command_fn_t fn;
+// } command_t;
+
+static command_t *select_command(char *command_name)
+{
+
+    for (int i = 0; i < COMMAND_COUNT; i++)
+    {
+        if (strcmp(command_name, commands[i].name) == 0)
+        {
+            return (command_t *)(commands + i); // ptr to command
+        }
+    }
+    return 0;
+}
 
 int cmd_echo(int argc, const char *argv[])
 {
@@ -23,7 +46,22 @@ int cmd_echo(int argc, const char *argv[])
 
 int cmd_help(int argc, const char *argv[])
 {
-    // TODO: your code here
+    command_t *command_requested = select_command((char *)argv[0]);
+    
+    if (argc > 1)
+    {
+        if (command_requested == 0) 
+        {
+            shell_printf("error: no such command `%s`.\n", argv[1]);
+            return 1; //  command not found
+        }
+
+    }
+
+    for (int i = 0; i < COMMAND_COUNT; i++)
+    {
+        shell_printf("%s    %s\n", commands[i].name, commands[i].description);
+    }
     return 0;
 }
 
@@ -67,11 +105,12 @@ void shell_readline(char buf[], size_t bufsize)
         }
 
         // check counter and bufsize
-        if (counter == bufsize - 1) 
+        if (counter == bufsize - 1)
         {
             continue;
         }
 
+        // return
         if (current == '\n')
         {
             buf[counter] = 0;
@@ -88,11 +127,61 @@ void shell_readline(char buf[], size_t bufsize)
     shell_printf("%c", '\n');
 }
 
+static char *strndup(const char *src, size_t n)
+{
+    char *dst = malloc(n + 1); // add bit for '\0'
+    memcpy(dst, src, n);
+    dst[n] = 0;
+    return dst;
+}
+
+/* From lab4 heapclient.c */
+static bool isspace(char ch)
+{
+    return ch == ' ' || ch == '\t' || ch == '\n';
+}
+/* From lab4 heapclient.c */
+static int tokenize(const char *line, char *array[], int max)
+{
+    int ntokens = 0;
+    const char *cur = line;
+
+    while (ntokens < max)
+    {
+        while (isspace(*cur))
+            cur++; // skip spaces (stop non-space/null)
+        if (*cur == '\0')
+            break; // no more non-space chars
+        const char *start = cur;
+        while (*cur != '\0' && !isspace(*cur))
+            cur++;                                      // advance to end (stop space/null)
+        array[ntokens++] = strndup(start, cur - start); // make heap-copy, add to array
+    }
+    return ntokens;
+}
+
+// typedef struct _command_struct {
+//     const char *name;
+//     const char *description;
+//     command_fn_t fn;
+// } command_t;
+
 int shell_evaluate(const char *line)
 {
-    shell_printf("%s", line);
+    char *tokens[LINE_LEN];
+    int token_count = tokenize(line, tokens, LINE_LEN);
 
-    return 1;
+    command_t *command = select_command(tokens[0]); // command
+
+    int result = command->fn(token_count, tokens);
+
+    if (command == 0) // if command wasn't valid
+    {
+        shell_printf("error: no such command `%s`.\n", tokens[0]);
+        return -1; // no command was ran
+    }
+
+    return result;
 }
 
 void shell_run(void)
