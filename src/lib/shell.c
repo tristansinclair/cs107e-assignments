@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "shell_commands.h"
 #include "uart.h"
+#include "printf.h"
 
 #define LINE_LEN 80
 
@@ -37,7 +38,13 @@ void shell_bell(void)
 
 void shell_readline(char buf[], size_t bufsize)
 {
-    // TODO: your code here
+    printf("Size of buf: %d", sizeof(buf));
+
+    unsigned int current = 0;
+    while(1)
+    {
+        if 
+    }
 }
 
 int shell_evaluate(const char *line)

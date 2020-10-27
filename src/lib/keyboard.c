@@ -96,7 +96,6 @@ static int read_bit(void)
     // now read data
     wait_for_falling_clock_edge();
 
-
     return gpio_read(DATA);
 }
 
@@ -122,7 +121,7 @@ unsigned char keyboard_read_scancode(void)
 {
     unsigned char scancode = 0;
 
-    start:
+    //start:
     scancode = 0;
 
     while (read_bit() != 0) // while not start bit
@@ -287,22 +286,41 @@ key_event_t keyboard_read_event(void)
 
 unsigned char keyboard_read_next(void)
 {
-    key_event_t event = keyboard_read_event();
-
-    if(event.action.what == KEY_RELEASE)
-      continue;
-      
-    unsigned char keycode = event.action.keycode;
-    //keyboard_modifiers_t modifiers = event.modifiers;
+    key_event_t event = {};
+    unsigned char keycode = 0;
     unsigned char character = 0;
-    if (event.action.what == KEY_PRESS) {
-        character = ps2_keys[keycode].ch;
-    }
 
-    // if (modifiers == 1)
-    // {
-    //     character = ps2_keys[keycode].other_ch;
-    // }
+    while (1)
+    {
+        event = keyboard_read_event();
+        if (event.action.what == KEY_RELEASE) // if it's a release key, don't send a char
+            continue;
+
+        keycode = event.action.keycode;
+        if ( // if it's a modifier key, don't send a char
+            ps2_keys[keycode].ch == PS2_KEY_SHIFT ||
+            ps2_keys[keycode].ch == PS2_KEY_CAPS_LOCK ||
+            ps2_keys[keycode].ch == PS2_KEY_ALT ||
+            ps2_keys[keycode].ch == PS2_KEY_CTRL ||
+            ps2_keys[keycode].ch == PS2_KEY_NUM_LOCK ||
+            ps2_keys[keycode].ch == PS2_KEY_SCROLL_LOCK)
+        {
+            continue;
+        }
+
+        character = ps2_keys[keycode].ch;
+
+        if (('a' <= character && character <= 'z') && event.modifiers & KEYBOARD_MOD_CAPS_LOCK)
+        {
+            character = ps2_keys[keycode].other_ch;
+        }
+        if (event.modifiers & KEYBOARD_MOD_SHIFT && ps2_keys[keycode].other_ch != 0)
+        {
+            character = ps2_keys[keycode].other_ch;
+        }
+
+        break;
+    }
 
     return character;
 }
