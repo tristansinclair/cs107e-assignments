@@ -224,38 +224,35 @@ void shell_readline(char buf[], size_t bufsize)
                 }
                 else // we aren't at the end
                 {
-                    if (position > 0)
+                    if (position > 0) // deleting chars in the middle
                     {
                         // move back one
                         shell_printf("%c", '\b');
                         position--;
 
-                        //shell_printf("\n\n\n%s\n", buf);
                         // set the buf up by shifting over one
                         memcpy(buf + position, buf + position + 1, counter - position + 1);
-                        //shell_printf("%s\n\n\n", buf);
-
-                        for (int i = counter; i > 0; i--)
+                        // clear the terminal view
+                        for (int i = position; i < counter; i++)
+                        {
+                            shell_printf("%c", ' ');
+                        }
+                        // move cursor back to position
+                        for (int i = counter; i > position; i--)
                         {
                             shell_printf("%c", '\b');
-                            shell_printf("%c", ' ');
-                            shell_printf("%c", '\b');
                         }
-                        for (int i = 0; i < counter; i++)
+                        // reprint edited buf
+                        for (int i = position; i < counter; i++)
                         {
                             shell_printf("%c", buf[i]);
                         }
-
-                        // for (int i = counter - position - 1; i < counter; i++)
-                        // {
-                        //     shell_printf("%c", buf[i]);
-                        // }
-                        // for (int i = counter; i > position; i--)
-                        // {
-                        //     shell_printf("%c", '\b');
-                        // }
-                        // buf[counter - 1] = 0;
-                        // counter--;
+                        // move cursor back
+                        for (int i = counter; i > position + 1; i--)
+                        {
+                            shell_printf("%c", '\b');
+                        }
+                        counter--;
                     }
                 }
             }
