@@ -254,6 +254,10 @@ void shell_readline(char buf[], size_t bufsize)
                         }
                         counter--;
                     }
+                    else
+                    {
+                        shell_bell();
+                    }
                 }
             }
             else
@@ -276,6 +280,44 @@ void shell_readline(char buf[], size_t bufsize)
         {
             buf[counter] = 0;
             break;
+        }
+
+        // adding chars in the middle
+        if (position != counter)
+        {
+            if (counter < bufsize - 1)
+            {
+                for (int i = counter; i > position; i--)
+                {
+                    buf[i] = buf[i - 1];
+                    //printf("\n%s\n", buf);
+                }
+
+                buf[position] = current;
+
+                counter++;
+
+                for (int i = position; i < counter; i++)
+                {
+                    shell_printf("%c", buf[i]);
+                }
+
+                // move cursor back
+                for (int i = counter; i > position + 1; i--)
+                {
+                    shell_printf("%c", '\b');
+                }
+
+                //shell_printf("%c[C", 0x1b);
+
+                position++;
+                // for (int i = position - 1; i < counter; i++)
+                // {
+                //     shell_printf("%c", buf[i]);
+                // }
+                buf[counter] = 0;
+            }
+            continue;
         }
 
         // need to fix bad chars
