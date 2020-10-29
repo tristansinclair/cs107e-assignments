@@ -6,26 +6,19 @@
 #include "strings.h"
 #include "malloc.h"
 #include "pi.h"
-#include "gpio.h"
 
 #define LINE_LEN 80
 
 static formatted_fn_t shell_printf;
 
 static const command_t commands[] = {
-    {"help", "<cmd> prints a list of commands or description of cmd", cmd_help},
-    {"echo", "<...> echos the user input to the screen", cmd_echo},
-    {"reboot", "< > reboots the Raspberry Pi back to the bootloader", cmd_reboot},
-    {"peek", "<addr> prints the contents (4 bytes) of memory at address", cmd_peek},
-    {"poke", "<addr> <value> stores `value` into the memory at `address`", cmd_poke}};
+    {"help", "<cmd>             prints a list of commands or description of cmd", cmd_help},
+    {"echo", "<...>             echos the user input to the screen", cmd_echo},
+    {"reboot", "                reboots the Raspberry Pi back to the bootloader", cmd_reboot},
+    {"peek", "<addr>            prints the contents (4 bytes) of memory at address", cmd_peek},
+    {"poke", "<addr> <value>    stores `value` into the memory at `address`", cmd_poke}};
 
 const size_t COMMAND_COUNT = (sizeof(commands) / sizeof(commands[0]));
-
-// typedef struct _command_struct {
-//     const char *name;
-//     const char *description;
-//     command_fn_t fn;
-// } command_t;
 
 static command_t *select_command(char *command_name)
 {
@@ -84,7 +77,7 @@ int cmd_reboot(int argc, const char *argv[])
 int cmd_peek(int argc, const char *argv[])
 {
     //gpio_set_output(1);
-    if (argc == 1) // only peek
+    if (argc == 1 || argc > 2) // only peek
     {
         shell_printf("error: peek requires 1 argument [address]\n");
         return 1;
@@ -145,7 +138,6 @@ int cmd_poke(int argc, const char *argv[])
     }
 
     *address = value;
-
     return 0;
 }
 
@@ -161,14 +153,17 @@ void shell_bell(void)
 
 void shell_readline(char buf[], size_t bufsize)
 {
-    // printf("Size of buf: %d", bufsize); 80
-
-    int counter = 0;
-    unsigned char current = 0;
+    int counter = 0;           // count of how many chars we have
+    unsigned char current = 0; // current char we read in
 
     while (1)
     {
         current = keyboard_read_next();
+
+        if (current > 128) // ascii up to 128, never want to print non-ascii chars!
+        {
+            continue;
+        }
 
         // handle backspace
         if (current == '\b')
@@ -176,21 +171,24 @@ void shell_readline(char buf[], size_t bufsize)
             if (counter > 0)
             {
                 buf[counter] = 0; // w/ extension needs to be fixed up
+
                 shell_printf("%c", '\b');
                 shell_printf("%c", ' ');
                 shell_printf("%c", '\b');
                 counter--;
-                continue;
             }
-            if (counter == 0)
+            else
             {
-                continue;
+                shell_bell();
             }
+
+            continue;
         }
 
-        // check counter and bufsize
-        if (counter == bufsize - 1)
+        // check counter and bufsize, skip unless current is return
+        if (counter == bufsize - 1 && current != '\n')
         {
+            shell_bell();
             continue;
         }
 
@@ -244,15 +242,10 @@ static int tokenize(const char *line, char *array[], int max)
     return ntokens;
 }
 
-// typedef struct _command_struct {
-//     const char *name;
-//     const char *description;
-//     command_fn_t fn;
-// } command_t;
-
 int shell_evaluate(const char *line)
 {
     char *tokens[LINE_LEN];
+    //char *tokens_ptr = tokens;
     int token_count = tokenize(line, tokens, LINE_LEN);
 
     if (token_count == 0)
@@ -266,11 +259,13 @@ int shell_evaluate(const char *line)
         return -1; // no command was ran
     }
 
-    int result = command->fn(token_count, tokens); // call command function
+    // return -1 for failure
+    int result = command->fn(token_count, (const char **)tokens) ? -1 : 0; // call command function
 
+    // free mallocs
     for (int i = 0; i < token_count; i++)
     {
-        free((char *)tokens[i]);
+        free((void *)tokens[i]);
     }
 
     return result;

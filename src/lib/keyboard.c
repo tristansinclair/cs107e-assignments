@@ -31,6 +31,7 @@ static void wait_for_falling_clock_edge(void)
 }
 
 // from Peter
+// returns the number of 1s in a bit
 static int has_odd_parity(unsigned char code)
 {
     unsigned int sum = 0;
@@ -42,7 +43,7 @@ static int has_odd_parity(unsigned char code)
     return sum;
 }
 
-// from Phil
+// from Phil for handling the reset code
 static void write_bit(int nbit, unsigned char code)
 {
     switch (nbit)
@@ -68,7 +69,7 @@ static void write_bit(int nbit, unsigned char code)
         break;
     }
 }
-// from Phil
+// from Phil for handling the reset code
 static void ps2_write(unsigned char command)
 {
     gpio_set_output(CLK); // swap GPIO from read to write
@@ -91,9 +92,6 @@ static void ps2_write(unsigned char command)
 
 static int read_bit(void)
 {
-    // falling edge on clock triggers read
-    // wait until clock reads high, then wait until clock reads low
-    // now read data
     wait_for_falling_clock_edge();
 
     return gpio_read(DATA);
@@ -101,8 +99,8 @@ static int read_bit(void)
 
 void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
 {
-    ps2_write(PS2_CMD_RESET);
-    printf("Reset code Sent.\n");
+    ps2_write(PS2_CMD_RESET); // send reset code
+    //printf("Reset code Sent.\n");
 
     CLK = clock_gpio;
     gpio_set_input(CLK);
@@ -112,45 +110,67 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     gpio_set_input(DATA);
     gpio_set_pullup(DATA);
 
-    keyboard_read_scancode(); //  throw away final [aa] after reset
+    // throw away the [aa] after the reset
+    keyboard_read_scancode();
+    keyboard_read_scancode(); 
 }
-
-//static int timer = 0;
 
 unsigned char keyboard_read_scancode(void)
 {
     unsigned char scancode = 0;
-
-    //start:
-    scancode = 0;
-
-    while (read_bit() != 0) // while not start bit
+    static unsigned int timer = 0;
+    static int split = 0;
+    while (1)
     {
+        while (read_bit() != 0) // while not start bit
+        {
+        }
+
+    start:
         scancode = 0;
-    }
-    // begin reading data bits
-    for (int i = 0; i < 8; i++) // read in byte of data
-    {
-        scancode |= (read_bit() << i);
-        // timer += timer_get_ticks();
-        // if (timer > 300) {
-        //     goto start;
-        // }
-        // timer = 0;
-    }
 
-    // unsigned char parity_bit = read_bit(); // next bit is parity
-    read_bit();
-    // if (has_odd_parity(parity_bit) % 2 == 0)
-    // {
-    //     goto start;
-    // }
-    read_bit(); // next bit is stop bit == 1
-    // if (scancode == 0xAA) {
-    //     return 0;
-    // }
+        // begin reading data bits
+        for (int i = 0; i < 8; i++) // read in byte of data
+        {
+            timer = timer_get_ticks(); // get current timer
+            scancode |= (read_bit() << i);
+            split = timer_get_ticks() - timer; // get split of how long read_bit() took
+            if (split > 3000)                  // check it's under 3 milliseconds
+            {
+                goto start;
+            }
+        }
 
-    // printf("Parity: %d\n", parity);
+        // parity bit
+        timer = timer_get_ticks();
+        int parity_bit = read_bit(); // next bit is parity
+        split = timer_get_ticks() - timer;
+        if (split > 3000)
+        {
+            goto start;
+        }
+
+        timer = timer_get_ticks();
+        int stop_bit = read_bit(); // next bit is stop bit == 1
+        split = timer_get_ticks() - timer;
+        if (split > 3000)
+        {
+            goto start;
+        }
+
+        // check if parity is odd
+        if ((has_odd_parity(scancode) + parity_bit) % 2 != 1)
+        {
+            continue;
+        }
+
+        if (stop_bit != 1)
+        {
+            continue;
+        }
+
+        break;
+    }
 
     return scancode;
 }
@@ -297,26 +317,35 @@ unsigned char keyboard_read_next(void)
             continue;
 
         keycode = event.action.keycode;
+
+        character = ps2_keys[keycode].ch;
+
         if ( // if it's a modifier key, don't send a char
-            ps2_keys[keycode].ch == PS2_KEY_SHIFT ||
-            ps2_keys[keycode].ch == PS2_KEY_CAPS_LOCK ||
-            ps2_keys[keycode].ch == PS2_KEY_ALT ||
-            ps2_keys[keycode].ch == PS2_KEY_CTRL ||
-            ps2_keys[keycode].ch == PS2_KEY_NUM_LOCK ||
-            ps2_keys[keycode].ch == PS2_KEY_SCROLL_LOCK)
+            character == PS2_KEY_SHIFT ||
+            character == PS2_KEY_CAPS_LOCK ||
+            character == PS2_KEY_ALT ||
+            character == PS2_KEY_CTRL ||
+            character == PS2_KEY_NUM_LOCK ||
+            character == PS2_KEY_SCROLL_LOCK ||
+            character == 0)
         {
             continue;
         }
 
-        character = ps2_keys[keycode].ch;
-
+        // control caps lock
         if (('a' <= character && character <= 'z') && event.modifiers & KEYBOARD_MOD_CAPS_LOCK)
         {
             character = ps2_keys[keycode].other_ch;
         }
+        // control shift
         if (event.modifiers & KEYBOARD_MOD_SHIFT && ps2_keys[keycode].other_ch != 0)
         {
             character = ps2_keys[keycode].other_ch;
+        }
+
+        if (character > 128 && character != PS2_KEY_ESC) // ascii up to 128
+        {
+            continue;
         }
 
         break;
