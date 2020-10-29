@@ -342,11 +342,20 @@ unsigned char keyboard_read_next(void)
         {
             character = ps2_keys[keycode].other_ch;
         }
-
-        if (character > 128 && character != PS2_KEY_ESC) // ascii up to 128 && need esc for testing
+        
+        // ctrl + u 
+        if (event.modifiers & KEYBOARD_MOD_CTRL && character == 'u')
         {
-            continue;
+            character = 140;
+            break;
         }
+
+
+        // // all other chars that we don't want to mess with
+        // if (character > 128 && character != PS2_KEY_ESC) // ascii up to 128 && need esc for testing
+        // {
+        //     continue;
+        // }
 
         break;
     }

@@ -153,12 +153,54 @@ void shell_bell(void)
 
 void shell_readline(char buf[], size_t bufsize)
 {
-    int counter = 0;           // count of how many chars we have
+    int counter = 0; // count of how many chars we have
+    int position = 0;
     unsigned char current = 0; // current char we read in
 
     while (1)
     {
         current = keyboard_read_next();
+
+        // ctrl + u
+        if (current == 140)
+        {
+            while (counter != 0)
+            {
+                shell_printf("%c", '\b');
+                shell_printf("%c", ' ');
+                shell_printf("%c", '\b');
+                counter--;
+            }
+            continue;
+        }
+
+        // left arrow
+        if (current == PS2_KEY_ARROW_LEFT)
+        {
+            if (position > 0)
+            {
+                shell_printf("%c", '\b');
+                position--;
+            }
+            else
+            {
+                shell_bell();
+            }
+
+            continue;
+        }
+
+        // right arrow
+        if (current == PS2_KEY_ARROW_RIGHT)
+        {
+            if (position < counter)
+            {
+                shell_printf("%c[C", 0x1b);
+                position++;
+            }
+
+            continue;
+        }
 
         if (current > 128) // ascii up to 128, never want to print non-ascii chars!
         {
@@ -170,12 +212,52 @@ void shell_readline(char buf[], size_t bufsize)
         {
             if (counter > 0)
             {
-                buf[counter] = 0; // w/ extension needs to be fixed up
+                if (counter == position)
+                {
+                    buf[counter] = 0; // w/ extension needs to be fixed up
 
-                shell_printf("%c", '\b');
-                shell_printf("%c", ' ');
-                shell_printf("%c", '\b');
-                counter--;
+                    shell_printf("%c", '\b');
+                    shell_printf("%c", ' ');
+                    shell_printf("%c", '\b');
+                    counter--;
+                    position--;
+                }
+                else // we aren't at the end
+                {
+                    if (position > 0)
+                    {
+                        // move back one
+                        shell_printf("%c", '\b');
+                        position--;
+
+                        //shell_printf("\n\n\n%s\n", buf);
+                        // set the buf up by shifting over one
+                        memcpy(buf + position, buf + position + 1, counter - position + 1);
+                        //shell_printf("%s\n\n\n", buf);
+
+                        for (int i = counter; i > 0; i--)
+                        {
+                            shell_printf("%c", '\b');
+                            shell_printf("%c", ' ');
+                            shell_printf("%c", '\b');
+                        }
+                        for (int i = 0; i < counter; i++)
+                        {
+                            shell_printf("%c", buf[i]);
+                        }
+
+                        // for (int i = counter - position - 1; i < counter; i++)
+                        // {
+                        //     shell_printf("%c", buf[i]);
+                        // }
+                        // for (int i = counter; i > position; i--)
+                        // {
+                        //     shell_printf("%c", '\b');
+                        // }
+                        // buf[counter - 1] = 0;
+                        // counter--;
+                    }
+                }
             }
             else
             {
@@ -185,8 +267,8 @@ void shell_readline(char buf[], size_t bufsize)
             continue;
         }
 
-        // check counter and bufsize, skip unless current is return
-        if (counter == bufsize - 1 && current != '\n')
+        // check position and bufsize, skip unless current is return
+        if (position == bufsize - 1 && current != '\n')
         {
             shell_bell();
             continue;
@@ -203,6 +285,8 @@ void shell_readline(char buf[], size_t bufsize)
         buf[counter] = current;
         shell_printf("%c", current);
         counter++;
+        buf[counter] = 0;
+        position++;
     }
 
     // after break
