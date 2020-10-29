@@ -3,6 +3,7 @@
 #include "printf.h"
 #include "uart.h"
 #include "timer.h"
+#include "shell.h"
 
 #define ESC_SCANCODE 0x76
 

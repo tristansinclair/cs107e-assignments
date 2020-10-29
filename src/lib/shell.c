@@ -245,7 +245,6 @@ static int tokenize(const char *line, char *array[], int max)
 int shell_evaluate(const char *line)
 {
     char *tokens[LINE_LEN];
-    //char *tokens_ptr = tokens;
     int token_count = tokenize(line, tokens, LINE_LEN);
 
     if (token_count == 0)

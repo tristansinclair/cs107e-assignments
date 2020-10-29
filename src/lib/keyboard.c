@@ -343,7 +343,7 @@ unsigned char keyboard_read_next(void)
             character = ps2_keys[keycode].other_ch;
         }
 
-        if (character > 128 && character != PS2_KEY_ESC) // ascii up to 128
+        if (character > 128 && character != PS2_KEY_ESC) // ascii up to 128 && need esc for testing
         {
             continue;
         }
