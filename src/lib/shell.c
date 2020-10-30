@@ -11,14 +11,27 @@
 
 static formatted_fn_t shell_printf;
 
+int cmd_history(int argc, const char *argv[]);
+
 static const command_t commands[] = {
     {"help", "<cmd>             prints a list of commands or description of cmd", cmd_help},
     {"echo", "<...>             echos the user input to the screen", cmd_echo},
     {"reboot", "                reboots the Raspberry Pi back to the bootloader", cmd_reboot},
     {"peek", "<addr>            prints the contents (4 bytes) of memory at address", cmd_peek},
-    {"poke", "<addr> <value>    stores `value` into the memory at `address`", cmd_poke}};
+    {"poke", "<addr> <value>    stores `value` into the memory at `address`", cmd_poke},
+    {"history", "<index>        prints the history of commands", cmd_history}};
 
 const size_t COMMAND_COUNT = (sizeof(commands) / sizeof(commands[0]));
+
+typedef struct
+{
+    char buf[LINE_LEN];
+} history_struct;
+static unsigned int history_counter = 0;
+static unsigned int head_location = 0;
+
+static history_struct history[10];
+static history_struct *head = &history[0];
 
 static command_t *select_command(char *command_name)
 {
@@ -141,6 +154,24 @@ int cmd_poke(int argc, const char *argv[])
     return 0;
 }
 
+int cmd_history(int argc, const char *argv[])
+{
+    int counter = 1;
+    for (int i = head_location; i < history_counter; i++)
+    {
+        history_struct *stored_history = history + i;
+        shell_printf("%d %s\n", counter, (char *)stored_history);
+        counter++;
+    }
+    for (int i = 0; i < head_location; i++)
+    {
+        history_struct *stored_history = history + i;
+        shell_printf("%d %s\n", counter, (char *)stored_history);
+        counter++;
+    }
+    return 0;
+}
+
 void shell_init(formatted_fn_t print_fn)
 {
     shell_printf = print_fn;
@@ -170,6 +201,26 @@ void shell_readline(char buf[], size_t bufsize)
                 shell_printf("%c", ' ');
                 shell_printf("%c", '\b');
                 counter--;
+            }
+            continue;
+        }
+        // ctrl + a
+        if (current == 141)
+        {
+            while (position != 0)
+            {
+                shell_printf("%c", '\b');
+                position--;
+            }
+            continue;
+        }
+        // ctrl + e
+        if (current == 142)
+        {
+            while (position != counter)
+            {
+                shell_printf("%c[C", 0x1b);
+                position++;
             }
             continue;
         }
@@ -282,7 +333,7 @@ void shell_readline(char buf[], size_t bufsize)
             break;
         }
 
-        // adding chars in the middle
+        // adding chars in the middle of bufm
         if (position != counter)
         {
             if (counter < bufsize - 1)
@@ -290,7 +341,6 @@ void shell_readline(char buf[], size_t bufsize)
                 for (int i = counter; i > position; i--)
                 {
                     buf[i] = buf[i - 1];
-                    //printf("\n%s\n", buf);
                 }
 
                 buf[position] = current;
@@ -308,19 +358,12 @@ void shell_readline(char buf[], size_t bufsize)
                     shell_printf("%c", '\b');
                 }
 
-                //shell_printf("%c[C", 0x1b);
-
                 position++;
-                // for (int i = position - 1; i < counter; i++)
-                // {
-                //     shell_printf("%c", buf[i]);
-                // }
                 buf[counter] = 0;
             }
             continue;
         }
 
-        // need to fix bad chars
         buf[counter] = current;
         shell_printf("%c", current);
         counter++;
@@ -367,6 +410,25 @@ static int tokenize(const char *line, char *array[], int max)
 
 int shell_evaluate(const char *line)
 {
+    // handle adding to history
+    if (history_counter < 10)
+    {
+        memcpy(head + history_counter, line, LINE_LEN);
+        history_counter++;
+    }
+    else
+    {
+        if (head_location == 10)
+        {
+            head -= 10;
+            head_location = 0;
+        }
+
+        memcpy(head, line, LINE_LEN);
+        head++;
+        head_location++;
+    }
+
     char *tokens[LINE_LEN];
     int token_count = tokenize(line, tokens, LINE_LEN);
 

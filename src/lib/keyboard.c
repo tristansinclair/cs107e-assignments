@@ -112,7 +112,7 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
 
     // throw away the [aa] after the reset
     keyboard_read_scancode();
-    keyboard_read_scancode(); 
+    keyboard_read_scancode();
 }
 
 unsigned char keyboard_read_scancode(void)
@@ -342,14 +342,25 @@ unsigned char keyboard_read_next(void)
         {
             character = ps2_keys[keycode].other_ch;
         }
-        
-        // ctrl + u 
+
+        // ctrl + u
         if (event.modifiers & KEYBOARD_MOD_CTRL && character == 'u')
         {
             character = 140;
             break;
         }
-
+        // ctrl + a
+        if (event.modifiers & KEYBOARD_MOD_CTRL && character == 'a')
+        {
+            character = 141;
+            break;
+        }
+        // ctrl + e
+        if (event.modifiers & KEYBOARD_MOD_CTRL && character == 'e')
+        {
+            character = 142;
+            break;
+        }
 
         // // all other chars that we don't want to mess with
         // if (character > 128 && character != PS2_KEY_ESC) // ascii up to 128 && need esc for testing
