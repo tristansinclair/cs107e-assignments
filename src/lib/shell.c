@@ -30,6 +30,9 @@ typedef struct
 static unsigned int history_counter = 0;
 static unsigned int head_location = 0;
 
+static unsigned int history_keyboard_counter = 0;
+static history_struct *history_keyboard = 0;
+
 static history_struct history[10];
 static history_struct *head = &history[0];
 
@@ -182,6 +185,26 @@ void shell_bell(void)
     uart_putchar('\a');
 }
 
+// static void clean_shell_line(int position, int counter, char buf[])
+// {
+//     while (position < counter)
+//     {
+//         shell_printf("%c[C", 0x1b);
+//         position++;
+//     }
+//     while (counter > 0)
+//     {
+//         buf[counter] = 0; // w/ extension needs to be fixed up
+
+//         shell_printf("%c", '\b');
+//         shell_printf("%c", ' ');
+//         shell_printf("%c", '\b');
+//         counter--;
+//         position--;
+//     }
+//     return;
+// }
+
 void shell_readline(char buf[], size_t bufsize)
 {
     int counter = 0; // count of how many chars we have
@@ -195,12 +218,21 @@ void shell_readline(char buf[], size_t bufsize)
         // ctrl + u
         if (current == 140)
         {
-            while (counter != 0)
+            // move position to counter
+            while (position < counter)
             {
+                shell_printf("%c[C", 0x1b);
+                position++;
+            }
+            while (counter > 0)
+            {
+                buf[counter] = 0; // w/ extension needs to be fixed up
+
                 shell_printf("%c", '\b');
                 shell_printf("%c", ' ');
                 shell_printf("%c", '\b');
                 counter--;
+                position--;
             }
             continue;
         }
@@ -224,7 +256,6 @@ void shell_readline(char buf[], size_t bufsize)
             }
             continue;
         }
-
         // left arrow
         if (current == PS2_KEY_ARROW_LEFT)
         {
@@ -240,7 +271,6 @@ void shell_readline(char buf[], size_t bufsize)
 
             continue;
         }
-
         // right arrow
         if (current == PS2_KEY_ARROW_RIGHT)
         {
@@ -252,6 +282,60 @@ void shell_readline(char buf[], size_t bufsize)
 
             continue;
         }
+        // up arrow
+        if (current == PS2_KEY_ARROW_UP)
+        {
+            if (history_keyboard_counter < history_counter)
+            {
+                // clear the shell line
+                while (position < counter)
+                {
+                    shell_printf("%c[C", 0x1b);
+                    position++;
+                }
+                while (counter > 0)
+                {
+                    buf[counter] = 0; // w/ extension needs to be fixed up
+
+                    shell_printf("%c", '\b');
+                    shell_printf("%c", ' ');
+                    shell_printf("%c", '\b');
+                    counter--;
+                    position--;
+                }
+
+                history_keyboard = head + history_keyboard_counter;
+                //printf("history_keyboard: %s\n", )
+                char *history_keyboard_char = (char *)history_keyboard;
+
+                for (int i = 0; i < strlen(history_keyboard_char); i++)
+                {
+                    shell_printf("%c", *history_keyboard_char);
+                    history_keyboard_char++;
+                }
+                history_keyboard_counter++;
+            }
+            else
+            {
+                shell_bell();
+            }
+
+            continue;
+        }
+
+        // down arrow
+        if (current == PS2_KEY_ARROW_DOWN)
+        {
+            if (position < counter)
+            {
+                shell_printf("%c[C", 0x1b);
+                position++;
+            }
+
+            continue;
+        }
+
+        // history
 
         if (current > 128) // ascii up to 128, never want to print non-ascii chars!
         {
