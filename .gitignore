@@ -8,6 +8,5 @@
 *.list
 *.o
 include/test-framework.h
-logs/*
-src/tests/[0-9][0-9][0-9]*.c
+.logs/*
 Makefile
