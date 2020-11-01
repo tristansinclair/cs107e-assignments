@@ -7,21 +7,29 @@
 #include "timer.h"
 #include "uart.h"
 
-
 #define _WIDTH 640
 #define _HEIGHT 512
 
 #define _NROWS 10
 #define _NCOLS 20
 
+static const color_t WHITE = 0xffffffff;
 void test_fb(void)
 {
     fb_init(700, 700, 4, FB_SINGLEBUFFER);
-    printf("Frame buffer pitch is %d\n", fb_get_pitch());
+    printf("Framebuffer successfully configured.\n");
+    printf("physical size = %d x %d\n", fb_get_width(), fb_get_height());
+    printf("depth = %d bits\n", fb_get_depth());
+    printf("pitch = %d bytes per row \n", fb_get_pitch());
+    printf("buffer address = %p\n", fb_get_draw_buffer());
 
     unsigned char *cptr = fb_get_draw_buffer();
-    int nbytes = fb_get_pitch()*fb_get_height();
+    printf("cptr address = %p\n", cptr);
+
+    int nbytes = fb_get_pitch() * fb_get_height();
     memset(cptr, 0x99, nbytes); // fill entire framebuffer with light gray pixels
+
+    //draw_square(0, 0, 200, 200, WHITE);
     timer_delay(3);
 }
 
@@ -32,20 +40,24 @@ void test_gl(void)
 
     // Background is purple
     gl_clear(gl_color(0x55, 0, 0x55));
+    timer_delay(1);
 
     // Draw green pixel at an arbitrary spot
-    gl_draw_pixel(_WIDTH/3, _HEIGHT/3, GL_GREEN);
-    assert(gl_read_pixel(_WIDTH/3, _HEIGHT/3) == GL_GREEN);
+    gl_draw_pixel(_WIDTH / 3, _HEIGHT / 3, GL_GREEN);
+    assert(gl_read_pixel(_WIDTH / 3, _HEIGHT / 3) == GL_GREEN);
+
+    timer_delay(1);
 
     // Blue rectangle in center of screen
-    gl_draw_rect(_WIDTH/2 - 50, _HEIGHT/2 - 50, 100, 100, GL_BLUE);
+    gl_draw_rect(_WIDTH / 2 - 50, _HEIGHT / 2 - 50, 100, 100, GL_BLUE);
+    //gl_clear(GL_BLUE);
 
     // Single amber character
     gl_draw_char(60, 10, 'A', GL_AMBER);
 
     // Show buffer with drawn contents
     gl_swap_buffer();
-    timer_delay(3);
+    timer_delay(1);
 }
 
 void test_console(void)
@@ -85,7 +97,7 @@ void main(void)
 
     test_fb();
     test_gl();
-    test_console();
+    //test_console();
 
     printf("Completed main() in test_gl_console.c\n");
     uart_putchar(EOT);
