@@ -51,7 +51,7 @@ void fb_init(unsigned int width, unsigned int height, unsigned int depth_in_byte
 
 void fb_swap_buffer(void)
 {
-    fb.y_offset = fb.y_offset == 0 ? fb.virtual_height : 0; // if y_offset = 0 chnage to fb.virtual_height
+    fb.y_offset = fb.y_offset == 0 ? fb.height : 0; // if y_offset = 0 chnage to fb.virtual_height
     mailbox_write(MAILBOX_FRAMEBUFFER, (unsigned)&fb);
     mailbox_read(MAILBOX_FRAMEBUFFER);
 }

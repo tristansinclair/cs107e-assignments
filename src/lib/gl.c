@@ -88,15 +88,50 @@ void gl_draw_rect(int x, int y, int w, int h, color_t c)
 
 void gl_draw_char(int x, int y, int ch, color_t c)
 {
-    // int font_width = font_get_width();
-    // int font_height = font_get_height();
+    int font_width = font_get_width();
+    int font_height = font_get_height();
 
-    // int buffer_width = gl_get_width();
-    // int buffer_height = gl_get_height();
+    int max_width = gl_get_width();
+    int max_height = gl_get_height();
+
+    if (x < 0 || y < 0 || x >= max_width || y >= max_height) // throw out out of bounds draws
+        return;
+
+    void *char_buf = malloc(font_get_size());
+
+    font_get_char(ch, (unsigned char *)char_buf, font_get_size());
+
+    unsigned char(*char_buf_2d)[font_width] = char_buf;
+
+    unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
+    unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
+
+    for (int _y = y; _y < (y + font_height); _y++)
+    {
+        for (int _x = x; _x < (x + font_width); _x++)
+        {
+            if (char_buf_2d[_y - y][_x - x] == 0xff)
+            {
+                fb[_y][_x] = c;
+            }
+            
+        }
+    }
+    free(char_buf);
 }
 
 void gl_draw_string(int x, int y, const char *str, color_t c)
 {
+    int font_width = font_get_width();
+    int _x = x;
+    char *_str = (char *)str;
+    while (*_str)
+    {
+        gl_draw_char(_x, y, *_str, c);
+        _str++; // move to next char
+        _x += font_width; // move x for printing
+        // add wrap?
+    }
 }
 
 unsigned int gl_get_char_height(void)

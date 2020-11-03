@@ -35,33 +35,38 @@ void test_fb(void)
 
 void test_gl_rectangles(void)
 {
-    gl_init(_WIDTH, _HEIGHT, GL_SINGLEBUFFER);
+    gl_init(_WIDTH, _HEIGHT, GL_DOUBLEBUFFER);
 
-    gl_clear(0xffffffff + (_WIDTH / 4));
+    // gl_clear(0xffffffff + (_WIDTH / 4));
+
+    // for (int a = (_WIDTH / 2); a > 0; a--)
+    // {
+    //     gl_draw_rect(((_WIDTH / 2) - (a / 2)), ((_HEIGHT / 2) - (a / 2)), a, a, 0xffffffff + (a / 2));
+    // }
+    // timer_delay(2);
+ƒ
+    // /* OUT OF BOUNDS TESTS */
+
+    // // negative x, y, w and h
+    // gl_draw_rect(-20, 0, 100, 100, 0xffffffff);
+    // gl_draw_rect(0, -100, 100, 100, 0xffffffff);
+    // gl_draw_rect(0, 0, -100, 100, 0xffffffff);
+    // gl_draw_rect(0, 0, 100, -100, 0xffffffff);
+
+    // gl_swap_buffer();
+    // // over x and over y
+    // gl_draw_rect(0, 250, _WIDTH + 1000, 100, 0xffffffff);
+    // timer_delay(2);
+    // gl_draw_rect(0, 350, 250, _HEIGHT + 20000, 0xffffffff);
+    // timer_delay(2);
+    // gl_swap_buffer();
+
+    gl_draw_char(60, 10, 'A', GL_AMBER);
+    gl_draw_char(80, 10, 'B', GL_AMBER);
+    gl_draw_char(100, 10, 'C', GL_AMBER);
+
+    gl_draw_string(60, 40, "ABC", GL_AMBER);
     
-    for (int a = (_WIDTH / 2); a > 0; a--)
-    {
-        gl_draw_rect(((_WIDTH / 2) - (a / 2)), ((_HEIGHT / 2) - (a / 2)), a, a, 0xffffffff + (a / 2));
-    }
-    timer_delay(3);
-
-    /* OUT OF BOUNDS TESTS */
-
-    // negative x, y, w and h
-    gl_draw_rect(-20, 0, 100, 100, 0xffffffff);
-    timer_delay(2);
-    gl_draw_rect(0, -100, 100, 100, 0xffffffff);
-    timer_delay(2);
-    gl_draw_rect(0, 0, -100, 100, 0xffffffff);
-    timer_delay(2);
-    gl_draw_rect(0, 0, 100, -100, 0xffffffff);
-    timer_delay(2);
-
-    // over x and over y
-    gl_draw_rect(0, 250, _WIDTH + 1000, 100, 0xffffffff);
-    timer_delay(2);
-    gl_draw_rect(0, 350, 250, _HEIGHT + 20000, 0xffffffff);
-    timer_delay(2);
 }
 
 void test_gl(void)
@@ -78,15 +83,31 @@ void test_gl(void)
 
     // Blue rectangle in center of screen
     gl_draw_rect(_WIDTH / 2 - 50, _HEIGHT / 2 - 50, 100, 100, GL_BLUE);
-    timer_delay(5);
 
     // Single amber character
     gl_draw_char(60, 10, 'A', GL_AMBER);
-    gl_draw_string(60, 10, "Hello World!", GL_WHITE);
 
     // Show buffer with drawn contents
     gl_swap_buffer();
     timer_delay(3);
+}
+
+void hello_c(void)
+{
+    gl_init(1280, 1024, GL_DOUBLEBUFFER);
+    gl_clear(GL_WHITE);
+    timer_delay(2);
+
+    while (1)
+    {
+        gl_clear(GL_BLACK);
+        gl_draw_string(20, 20, "hello, world 0", GL_WHITE);
+        gl_swap_buffer();
+
+        gl_clear(GL_BLACK);
+        gl_draw_string(20, 20, "hello, world 1", GL_WHITE);
+        gl_swap_buffer();
+    }
 }
 
 void test_gl_extra2(void)
@@ -142,11 +163,13 @@ void main(void)
     timer_init();
     printf("Executing main() in test_gl_console.c\n");
 
-    //test_gl_rectangles();
-    test_fb();
+    test_gl_rectangles();
+    //test_fb();
     //test_gl_extra2();
     //test_gl();
     //test_console();
+
+    //hello_c();
 
     printf("Completed main() in test_gl_console.c\n");
     uart_putchar(EOT);
