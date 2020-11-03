@@ -44,7 +44,7 @@ void test_gl_rectangles(void)
     //     gl_draw_rect(((_WIDTH / 2) - (a / 2)), ((_HEIGHT / 2) - (a / 2)), a, a, 0xffffffff + (a / 2));
     // }
     // timer_delay(2);
-ƒ
+
     // /* OUT OF BOUNDS TESTS */
 
     // // negative x, y, w and h
@@ -95,8 +95,6 @@ void test_gl(void)
 void hello_c(void)
 {
     gl_init(1280, 1024, GL_DOUBLEBUFFER);
-    gl_clear(GL_WHITE);
-    timer_delay(2);
 
     while (1)
     {
@@ -163,11 +161,11 @@ void main(void)
     timer_init();
     printf("Executing main() in test_gl_console.c\n");
 
-    test_gl_rectangles();
+    //test_gl_rectangles();
     //test_fb();
     //test_gl_extra2();
     //test_gl();
-    //test_console();
+    test_console();
 
     //hello_c();
 

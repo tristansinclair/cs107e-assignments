@@ -86,6 +86,8 @@ void gl_draw_rect(int x, int y, int w, int h, color_t c)
     }
 }
 
+static void *char_buf;
+
 void gl_draw_char(int x, int y, int ch, color_t c)
 {
     int font_width = font_get_width();
@@ -97,7 +99,10 @@ void gl_draw_char(int x, int y, int ch, color_t c)
     if (x < 0 || y < 0 || x >= max_width || y >= max_height) // throw out out of bounds draws
         return;
 
-    void *char_buf = malloc(font_get_size());
+    if (char_buf == NULL)
+    {
+        char_buf = malloc(font_get_size());
+    }
 
     font_get_char(ch, (unsigned char *)char_buf, font_get_size());
 
@@ -114,10 +119,8 @@ void gl_draw_char(int x, int y, int ch, color_t c)
             {
                 fb[_y][_x] = c;
             }
-            
         }
     }
-    free(char_buf);
 }
 
 void gl_draw_string(int x, int y, const char *str, color_t c)
@@ -128,7 +131,7 @@ void gl_draw_string(int x, int y, const char *str, color_t c)
     while (*_str)
     {
         gl_draw_char(_x, y, *_str, c);
-        _str++; // move to next char
+        _str++;           // move to next char
         _x += font_width; // move x for printing
         // add wrap?
     }
