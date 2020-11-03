@@ -39,7 +39,21 @@ color_t gl_color(unsigned char r, unsigned char g, unsigned char b)
 
 void gl_clear(color_t c)
 {
-    gl_draw_rect(0, 0, gl_get_width(), gl_get_height(), c);
+    //gl_draw_rect(0, 0, gl_get_width(), gl_get_height(), c);
+
+    unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
+    unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
+
+    int max_height = gl_get_height();
+    int max_width = gl_get_width();
+
+    for (int y = 0; y < max_height; y++)
+    {
+        for (int x = 0; x < max_width; x++)
+        {
+            fb[y][x] = c;
+        }
+    }
 }
 
 void gl_draw_pixel(int x, int y, color_t c)

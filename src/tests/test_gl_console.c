@@ -132,18 +132,20 @@ void test_console(void)
 
     // 1: "HELLO WORLD"
     console_printf("HELLO WORLD\r");
-    timer_delay(3);
+    timer_delay(1);
 
     // 1: "HAPPY WORLD"
     // 2: "CODING"
     console_printf("HAPPY\nCODING\n");
-    timer_delay(3);
+    timer_delay(1);
 
     // Clear
     console_printf("\f");
 
     // 1: "Goodbye"
     console_printf("Goodbye!\n");
+    console_printf("ABCDEFGHIJKLMNOPQRSTUV\n");
+    console_printf("!@#$%%^&*()_+-=[]{}:\";'<>?,./`~");
 }
 
 /* TODO: Add tests to test your graphics library and console.

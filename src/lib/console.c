@@ -12,8 +12,19 @@ static void process_char(char ch);
 //     int x;
 //     int y;
 // }
-volatile static int cur_x;
-volatile static int cur_y;
+static unsigned int cur_x;
+static unsigned int cur_y;
+
+static unsigned int MAX_WIDTH;
+static unsigned int MAX_HEIGHT;
+
+static unsigned int FONT_WIDTH;
+static unsigned int FONT_HEIGHT;
+
+static unsigned int current_line = 0;
+static unsigned int MAX_LINES = 0;
+
+#define PADDING 2;
 
 void console_init(unsigned int nrows, unsigned int ncols)
 {
@@ -28,14 +39,18 @@ void console_init(unsigned int nrows, unsigned int ncols)
 
     // unsigned int height = (nrows * font_get_height()) < max_heigth ? (nrows * font_get_height()) : max_heigth;
     // unsigned int width = (ncols * font_get_width()) < max_width ? (ncols * font_get_width()) : max_width;
+    FONT_WIDTH = font_get_width();
+    FONT_HEIGHT = font_get_height();
 
-    unsigned int height = nrows * font_get_height();
-    unsigned int width = ncols * font_get_width();
+    MAX_WIDTH = ncols * (FONT_WIDTH);
+    MAX_HEIGHT = nrows * (FONT_HEIGHT + PADDING);
 
     cur_x = 0;
     cur_y = 0;
 
-    gl_init(width, height, GL_DOUBLEBUFFER);
+    MAX_LINES = nrows;
+
+    gl_init(MAX_WIDTH, MAX_HEIGHT, GL_DOUBLEBUFFER);
 }
 
 void console_clear(void)
@@ -64,6 +79,19 @@ int console_printf(const char *format, ...)
     return length;
 }
 
+static void scroll_down(void)
+{
+    if (current_line > MAX_LINES)
+    {
+        unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
+        unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
+        for (int y = 0; y < (MAX_HEIGHT - (FONT_HEIGHT + 2)); y++)
+        {
+            memcpy((void *)fb[y], (void *)fb[y ], size_t n)
+        }
+    }
+}
+
 static void process_char(char ch)
 {
     // TODO: implement this helper function (recommended)
@@ -71,8 +99,21 @@ static void process_char(char ch)
     // of cursor, cursor advances one position
     // if special char: (\r \n \f \b) handle according to specific function
 
-    printf("char value = %d", (int)ch);
-    if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z'))
+    //printf("char value = %d", (int)ch);
+
+    if (cur_x >= MAX_WIDTH)
+    {
+        cur_x = 0;
+        cur_y += FONT_HEIGHT + PADDING;
+        current_line++;
+    }
+    if (cur_y >= MAX_WIDTH)
+    {
+        scroll_down();
+    }
+
+    //if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z'))
+    if (32 <= ch && ch <= 126)
     {
         printf("char = %c\n", ch);
         gl_draw_char(cur_x, cur_y, ch, GL_GREEN);
@@ -81,15 +122,16 @@ static void process_char(char ch)
     else if (ch == '\r')
     {
         //gl_draw_char(cur_x, cur_y, ch, GL_GREEN);
-        printf("yay for return\n");
+        //printf("yay for return\n");
         cur_x = 0;
     }
     else if (ch == '\n')
     {
-        printf("yay for newline\n");
+        //printf("yay for newline\n");
         //gl_draw_char(cur_x, cur_y, ch, GL_GREEN);
         cur_x = 0;
-        cur_y += font_get_height();
+        cur_y += font_get_height() + PADDING;
+        current_line++;
     }
     else if (ch == '\b')
     {
