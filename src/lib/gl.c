@@ -1,5 +1,7 @@
 #include "gl.h"
 #include "strings.h"
+#include "font.h"
+#include "malloc.h"
 
 void gl_init(unsigned int width, unsigned int height, gl_mode_t mode)
 {
@@ -11,11 +13,13 @@ void gl_swap_buffer(void)
     fb_swap_buffer();
 }
 
+// physical width
 unsigned int gl_get_width(void)
 {
     return fb_get_width();
 }
 
+// physical height
 unsigned int gl_get_height(void)
 {
     return fb_get_height();
@@ -23,6 +27,7 @@ unsigned int gl_get_height(void)
 
 color_t gl_color(unsigned char r, unsigned char g, unsigned char b)
 {
+    // b g r a
     color_t color = 0;
     color |= (0xff << 24); // brightness
     color |= (r << 16);
@@ -39,60 +44,69 @@ void gl_clear(color_t c)
 
 void gl_draw_pixel(int x, int y, color_t c)
 {
-    int pitch = fb_get_pitch() / 4;
-    unsigned int(*arr)[pitch] = fb_get_draw_buffer();
-    arr[y][x] = c;
+    if (x < 0 || y < 0 || x >= gl_get_width() || y >= gl_get_height()) // throw out out of bounds draws
+        return;
+
+    unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
+    unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
+
+    fb[y][x] = c;
 }
 
 color_t gl_read_pixel(int x, int y)
 {
-    unsigned int per_row = fb_get_pitch() / fb_get_depth();
-    unsigned int(*im)[per_row] = fb_get_draw_buffer();
-    return im[y][x];
+    if (x < 0 || y < 0 || x >= gl_get_width() || y >= gl_get_height()) // throw out out of bounds reads
+        return 0;
+
+    unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
+    unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
+    return fb[y][x];
 }
 
 void gl_draw_rect(int x, int y, int w, int h, color_t c)
 {
-    // int max_height = gl_get_height();
-    // int max_width = gl_get_width();
-    {
+    int max_height = gl_get_height();
+    int max_width = gl_get_width();
 
-        for (int _y = y; _y < h; _y++)
+    if (x < 0 || y < 0 || x >= max_width || y >= max_height || w < 0 || h < 0) // throw out out of bounds draws
+        return;
+
+    w = x + w <= max_width ? w : max_width - x;
+    h = y + h <= max_height ? h : max_height - y;
+
+    unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
+    unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
+
+    for (int _y = y; _y < (y + h); _y++)
+    {
+        for (int _x = x; _x < (x + w); _x++)
         {
-            for (int _x = x; _x < w; _x++)
-            {
-                gl_draw_pixel(_x, _y, c);
-            }
+            fb[_y][_x] = c;
         }
     }
 }
 
 void gl_draw_char(int x, int y, int ch, color_t c)
 {
-    // int font_height = font_get_height();
     // int font_width = font_get_width();
+    // int font_height = font_get_height();
 
-    // int fb_width = gl_get_width();
-    // int fb_height = gl_get_height();
-
-    return;
+    // int buffer_width = gl_get_width();
+    // int buffer_height = gl_get_height();
 }
 
 void gl_draw_string(int x, int y, const char *str, color_t c)
 {
-    // TODO: implement this function
 }
 
 unsigned int gl_get_char_height(void)
 {
-    // TODO: implement this function
-    return 0;
+    return font_get_height();
 }
 
 unsigned int gl_get_char_width(void)
 {
-    // TODO: implement this function
-    return 0;
+    return font_get_width();
 }
 
 void gl_draw_line(int x1, int y1, int x2, int y2, color_t c)
@@ -100,7 +114,8 @@ void gl_draw_line(int x1, int y1, int x2, int y2, color_t c)
     int dx = x2 - x1;
     int dy = y2 - y1;
 
-    int x = 0;
+    // int x = 0;
+    // int y = 0;
     int y = 0;
 
     for (int x = x1; x < x2; x++)
