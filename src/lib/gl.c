@@ -122,9 +122,6 @@ void gl_draw_char(int x, int y, int ch, color_t c)
 
     unsigned char(*char_buf_2d)[font_width] = char_buf;
 
-    // unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
-    // unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
-
     for (int _y = y; _y < (y + font_height); _y++)
     {
         for (int _x = x; _x < (x + font_width); _x++)
@@ -147,7 +144,6 @@ void gl_draw_string(int x, int y, const char *str, color_t c)
         gl_draw_char(_x, y, *_str, c);
         _str++;           // move to next char
         _x += font_width; // move x for printing
-        // add wrap?
     }
 }
 

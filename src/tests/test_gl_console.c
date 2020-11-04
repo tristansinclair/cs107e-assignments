@@ -154,25 +154,25 @@ void test_console_etxra(void)
     console_init(_NROWS, _NCOLS);
 
     // 1: "HELLO WORLD"
-    console_printf("HELLO WORLD 1\n");
+    console_printf("HELLO WORLD\n");
     console_printf("HELLO WORLD 2\n");
-    console_printf("HELLO WORLD 3\n");
-    console_printf("HELLO WORLD 4\n");
-    console_printf("HELLO WORLD 5\n");
-    console_printf("HELLO WORLD 6\n");
-    console_printf("HELLO WORLD 7\n");
-    console_printf("HELLO WORLD 8\n");
-    console_printf("HELLO WORLD 9\n");
-    timer_delay(1);
-    console_printf("HELLO WORLD 10\n");
+    console_printf("HELLO WORLD 3 HELLO WORLD 3 HELLO WORLD 3\n");
+    // console_printf("HELLO WORLD 4\n");
+    // console_printf("HELLO WORLD 5\n");
+    // console_printf("HELLO WORLD 6\n");
+    // console_printf("HELLO WORLD 7\n");
+    // console_printf("HELLO WORLD 8\n");
+    // console_printf("HELLO WORLD 9\n");
+    // timer_delay(1);
+    // console_printf("HELLO WORLD 10\n");
 
-    timer_delay(3);
-    console_printf("12345678901234567890123456\n");
-    timer_delay(3);
-    console_printf("HELLO WORLD 11\n");
-    timer_delay(3);
-    console_printf("HELLO WORLD 12\n");
-    timer_delay(3);
+    // timer_delay(3);
+    // //console_printf("12345678901234567890123456\n");
+    // //timer_delay(3);
+    // console_printf("HELLO WORLD 11\n");
+    // timer_delay(3);
+    // console_printf("HELLO WORLD 12\n");
+    // timer_delay(3);
     // console_printf("12345678901234567890123456\n");
     // console_printf("HELLO WORLD 13\n");
     // timer_delay(1);
