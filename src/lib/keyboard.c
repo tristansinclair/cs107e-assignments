@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "printf.h"
 
+#define RESET 0
 enum
 {
     PS2_CMD_RESET = 0xFF,
@@ -43,6 +44,7 @@ static int has_odd_parity(unsigned char code)
     return sum;
 }
 
+#if RESET
 // from Phil for handling the reset code
 static void write_bit(int nbit, unsigned char code)
 {
@@ -89,6 +91,7 @@ static void ps2_write(unsigned char command)
     gpio_set_input(DATA); // done writing, exit from request-to-send
     wait_for_falling_clock_edge();
 }
+#endif
 
 static int read_bit(void)
 {
@@ -99,8 +102,10 @@ static int read_bit(void)
 
 void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
 {
+#   if RESET
     ps2_write(PS2_CMD_RESET); // send reset code
     //printf("Reset code Sent.\n");
+#   endif
 
     CLK = clock_gpio;
     gpio_set_input(CLK);
@@ -110,9 +115,11 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     gpio_set_input(DATA);
     gpio_set_pullup(DATA);
 
+#   if RESET
     // throw away the [aa] after the reset
     keyboard_read_scancode();
     keyboard_read_scancode(); 
+#   endif
 }
 
 unsigned char keyboard_read_scancode(void)
