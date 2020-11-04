@@ -23,28 +23,18 @@ static unsigned int MAX_HEIGHT;
 static unsigned int FONT_WIDTH;
 static unsigned int FONT_HEIGHT;
 
-static unsigned int current_line = 0;
+static unsigned int line_count = 0;
+static unsigned int tail = 0;
 static unsigned int MAX_LINES = 0;
 
-// replacing
+// for tracking line history
 static char *display_history;
-// static char *history_tail;
-// static int history_tail_index = 0;
-
-// new tracker
-static char temp_line_buf[80];
-static int temp_line_buf_index = 0;
+static char *cur_char_history;
 
 #define PADDING 2
 
 void console_init(unsigned int nrows, unsigned int ncols)
 {
-    // TODO: implement this function
-    // call `process_char` to silence the compiler's warning
-    // that it's defined but not used
-    // once you use `process_char` elsewhere, you can delete
-    // this line of code
-
     FONT_WIDTH = font_get_width();
     FONT_HEIGHT = font_get_height();
 
@@ -55,43 +45,73 @@ void console_init(unsigned int nrows, unsigned int ncols)
     cur_y = 0;
 
     MAX_LINES = nrows;
-    display_history = malloc(MAX_LINES * 80);
-    //history_tail = display_history;
+    display_history = malloc((MAX_LINES)*80);
+    cur_char_history = display_history;
 
     gl_init(MAX_WIDTH, MAX_HEIGHT, GL_DOUBLEBUFFER);
 }
 
 void console_clear(void)
 {
-    // TODO: implement this function
+    gl_draw_rect(0, 0, MAX_WIDTH, MAX_HEIGHT, 0x0);
+}
+
+void print_history(void)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        printf("index: %d   %s \n", i, display_history + (80 * i));
+    }
+    printf("TAIL index: %d\n", tail);
+}
+
+static void scroll_down(void)
+{
+    int new_x = 0;
+    int new_y = 0;
+
+    char *scroll_ptr = display_history;
+    scroll_ptr += 80;
+    scroll_ptr += tail * 80;
+
+    console_clear();
+
+    for (int i = 0; i < MAX_LINES; i++)
+    {
+        gl_draw_string(new_x, new_y, scroll_ptr, GL_GREEN);
+        new_y += FONT_HEIGHT + 2;
+        scroll_ptr += 80;
+    }
+}
+
+void store_line(void)
+{
+    *cur_char_history = '\0'; // close current string
+    //printf("cur_char_history: %s\n", display_history + (80 * tail));
+
+    // move to the next index
+    line_count++;
+    tail = line_count % MAX_LINES;
+
+    cur_char_history = display_history + (80 * tail);
+    *cur_char_history = '\0'; // close the new buf to be empty
+
+    print_history();
 }
 
 void next_line(void)
 {
-    temp_line_buf[temp_line_buf_index] = '\0';
-    printf("temp_line_buf: %s\n", temp_line_buf);
+    store_line();
+
+    if (line_count >= MAX_LINES)
+    {
+        scroll_down();
+    }
+
+    // move cursor
     cur_x = 0;
     cur_y += FONT_HEIGHT + PADDING;
-    current_line++;
-    temp_line_buf_index = 0;
-    temp_line_buf[0] = '\0';
 }
-
-// void store_line_history(char buf[])
-// {
-//     if (history_tail_index == MAX_LINES)
-//     {
-//         history_tail_index = 0;         // set index back to 0
-//         history_tail = display_history; // set tail back to the start
-//     }
-//     memcpy(history_tail, buf, 80);
-//     printf("history_tail: %s\n", history_tail);
-//     printf("display_history: %s\n", display_history);
-//     printf("history_tail_index = %d\n\n", history_tail_index);
-
-//     history_tail_index++;
-//     history_tail += 80;
-// }
 
 int console_printf(const char *format, ...)
 {
@@ -108,59 +128,31 @@ int console_printf(const char *format, ...)
         process_char(buf[i]);
     }
 
-    //gl_draw_string(cur_x, cur_y, buf, GL_GREEN);
     printf("console printf: %s\n", buf);
-
-    //memcpy(history_tail, buf, 80);
-    //store_line_history(buf);
-
-    //printf("current line = %d\n", current_line);
-    //assert(strcmp(display_history, "\f") == 0);
-    //current_line++;
-    //display_history += 80;
 
     return length;
 }
 
-// static void scroll_down(void)
-// {
-//     if (current_line > MAX_LINES)
-//     {
-//         unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
-//         unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
-//         for (int y = 0; y < (MAX_HEIGHT - (FONT_HEIGHT + 2)); y++)
-//         {
-//             memcpy((void *)fb[y], (void *)fb[y ], size_t n)
-//         }
-//     }
-// }
-
 static void process_char(char ch)
 {
-    // TODO: implement this helper function (recommended)
-    // if ordinary char: inserts ch into contents at current position
-    // of cursor, cursor advances one position
-    // if special char: (\r \n \f \b) handle according to specific function
-
-    //printf("char value = %d", (int)ch);
-
     if (cur_x >= MAX_WIDTH)
     {
         next_line();
     }
     if (cur_y >= MAX_WIDTH)
     {
-        //scroll_down();
+        scroll_down();
     }
 
     //if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z'))
     if (32 <= ch && ch <= 126)
     {
-        //printf("char = %c\n", ch);
         gl_draw_char(cur_x, cur_y, ch, GL_GREEN);
-        cur_x += font_get_width();
-        temp_line_buf[temp_line_buf_index] = ch;
-        temp_line_buf_index++;
+        cur_x += FONT_WIDTH;
+
+        // add char to the history
+        *cur_char_history = ch;
+        cur_char_history++;
     }
     else if (ch == '\r')
     {
