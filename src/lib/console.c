@@ -30,10 +30,6 @@ static char *cur_char_history;
 static unsigned int MAX_CHARS;
 static unsigned int char_count = 0;
 
-//static unsigned int refresh_needed = 1;
-
-//static int delay = 0;
-
 void console_init(unsigned int nrows, unsigned int ncols)
 {
     FONT_WIDTH = font_get_width();
@@ -56,36 +52,6 @@ void console_init(unsigned int nrows, unsigned int ncols)
 void console_clear(void)
 {
     gl_draw_rect(0, 0, MAX_WIDTH, MAX_HEIGHT, 0x0);
-}
-
-void refresh_buffer(void)
-{
-    gl_swap_buffer();
-    console_clear();
-
-    int new_x = 0;
-    int new_y = 0;
-
-    char *refresh_ptr = display_history;
-
-    if (line_count >= MAX_LINES)
-    {
-        refresh_ptr = display_history + (((tail + 1) % MAX_LINES) * 80);
-    }
-
-    for (int i = 0; i < MAX_LINES; i++)
-    {
-        gl_draw_string(new_x, new_y, refresh_ptr, GL_GREEN);
-
-        new_y += FONT_HEIGHT;
-
-        refresh_ptr = display_history + (80 * ((i + 1) % MAX_LINES));
-
-        if (line_count >= MAX_LINES)
-        {
-            refresh_ptr = display_history + (((tail + 1 + i + 1) % MAX_LINES) * 80);
-        }
-    }
 }
 
 void print_history(void)
@@ -122,9 +88,6 @@ static void shift_up(void)
 {
     console_clear(); // clear the hidden buffer
 
-    cur_x = 0;
-    cur_y = 0;
-
     line_count++;
     tail = (tail + 1) % MAX_LINES;
 
@@ -137,16 +100,14 @@ static void shift_up(void)
 
     for (int i = 0; i < MAX_LINES - 1; i++)
     {
-        gl_draw_string(new_x, new_y, shift_ptr, GL_GREEN);
+        gl_draw_string(0, new_y, shift_ptr, GL_GREEN);
         new_y += FONT_HEIGHT;
         temp_tail = (temp_tail + 1) % MAX_LINES;
         shift_ptr = display_history + (80 * temp_tail);
     }
 
-    cur_char_history = display_history + (tail * 80);
-    char_count = 0;
-
     gl_swap_buffer();
+    console_clear();
 
     new_x = 0;
     new_y = 0;
@@ -166,9 +127,7 @@ static void shift_up(void)
     cur_char_history = display_history + (tail * 80);
     char_count = 0;
 
-
-    print_history();
-    printf("SHIFT UP\n");
+    cur_x = 0;
 }
 
 static void next_line(void)
@@ -210,7 +169,7 @@ static void backspace(void)
     cur_x -= FONT_WIDTH;
     gl_draw_rect(cur_x, cur_y, FONT_WIDTH, FONT_HEIGHT, 0x0);
     gl_swap_buffer();
-    gl_draw_rect(cur_x, cur_y, FONT_WIDTH, FONT_HEIGHT, 0x0);z
+    gl_draw_rect(cur_x, cur_y, FONT_WIDTH, FONT_HEIGHT, 0x0);
 }
 
 static void process_char(char ch)
@@ -245,6 +204,5 @@ static void process_char(char ch)
             }
         }
         standard_char(ch); //  draw char
-
     }
 }
