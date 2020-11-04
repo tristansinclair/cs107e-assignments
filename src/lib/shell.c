@@ -12,11 +12,11 @@
 static formatted_fn_t shell_printf;
 
 static const command_t commands[] = {
-    {"help", "<cmd>             prints a list of commands or description of cmd", cmd_help},
-    {"echo", "<...>             echos the user input to the screen", cmd_echo},
-    {"reboot", "                reboots the Raspberry Pi back to the bootloader", cmd_reboot},
-    {"peek", "<addr>            prints the contents (4 bytes) of memory at address", cmd_peek},
-    {"poke", "<addr> <value>    stores `value` into the memory at `address`", cmd_poke}};
+    {"help", "<cmd> prints a list of commands or description of cmd", cmd_help},
+    {"echo", "<...> echos the user input to the screen", cmd_echo},
+    {"reboot", "reboots the Raspberry Pi back to the bootloader", cmd_reboot},
+    {"peek", "<addr> prints the contents (4 bytes) of memory at address", cmd_peek},
+    {"poke", "<addr> <value> stores `value` into the memory at `address`", cmd_poke}};
 
 const size_t COMMAND_COUNT = (sizeof(commands) / sizeof(commands[0]));
 
