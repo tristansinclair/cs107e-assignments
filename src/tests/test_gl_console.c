@@ -66,7 +66,6 @@ void test_gl_rectangles(void)
     gl_draw_char(100, 10, 'C', GL_AMBER);
 
     gl_draw_string(60, 40, "ABC", GL_AMBER);
-    
 }
 
 void test_gl(void)
@@ -148,6 +147,25 @@ void test_console(void)
     console_printf("!@#$%%^&*()_+-=[]{}:\";'<>?,./`~");
 }
 
+void test_console_etxra(void)
+{
+    console_init(_NROWS, _NCOLS);
+
+    // 1: "HELLO WORLD"
+    console_printf("HELLO WORLD 123456789123456789\n");
+    console_printf("HELLO WORLD 2\n");
+    console_printf("HELLO WORLD 3\n");
+    console_printf("HELLO WORLD 4\n");
+    console_printf("HELLO WORLD 5\n");
+    console_printf("HELLO WORLD 6\n");
+    console_printf("HELLO WORLD 7\n");
+    console_printf("HELLO WORLD 8\n");
+    console_printf("HELLO WORLD 9\n");
+    console_printf("HELLO WORLD 10\n");
+    console_printf("HELLO WORLD 11\n");
+    console_printf("HELLO WORLD 12\n");
+}
+
 /* TODO: Add tests to test your graphics library and console.
    For the graphics library, test both single & double
    buffering and confirm all drawing is clipeed to bounds
@@ -167,7 +185,8 @@ void main(void)
     //test_fb();
     //test_gl_extra2();
     //test_gl();
-    test_console();
+    //test_console();
+    test_console_etxra();
 
     //hello_c();
 
