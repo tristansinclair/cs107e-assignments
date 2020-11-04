@@ -10,10 +10,6 @@
 
 static void process_char(char ch);
 
-// struct cursor {
-//     int x;
-//     int y;
-// }
 static unsigned int cur_x;
 static unsigned int cur_y;
 
@@ -28,10 +24,13 @@ static unsigned int tail = 0;
 static unsigned int MAX_LINES = 0;
 
 // for tracking line history
-static char *display_history;
+static char *display_history; // holds the display
 static char *cur_char_history;
 
-#define PADDING 2
+static unsigned int MAX_CHARS;
+static unsigned int char_count = 0;
+
+//static int delay = 0;
 
 void console_init(unsigned int nrows, unsigned int ncols)
 {
@@ -39,11 +38,12 @@ void console_init(unsigned int nrows, unsigned int ncols)
     FONT_HEIGHT = font_get_height();
 
     MAX_WIDTH = ncols * (FONT_WIDTH);
-    MAX_HEIGHT = nrows * (FONT_HEIGHT + PADDING);
+    MAX_HEIGHT = nrows * (FONT_HEIGHT);
 
     cur_x = 0;
     cur_y = 0;
 
+    MAX_CHARS = ncols;
     MAX_LINES = nrows;
     display_history = malloc((MAX_LINES)*80);
     cur_char_history = display_history;
@@ -56,6 +56,44 @@ void console_clear(void)
     gl_draw_rect(0, 0, MAX_WIDTH, MAX_HEIGHT, 0x0);
 }
 
+void refresh(void)
+{
+    int new_x = 0;
+    int new_y = 0;
+
+    // if (line_count >= MAX_LINES)
+    // {
+    //     new_y = FONT_HEIGHT * (MAX_LINES);
+    // }
+
+    char *refresh_ptr = display_history;
+
+    //int reps = line_count < MAX_LINES ? line_count + 1 : MAX_LINES;
+    //rintf("line count: %d", line_count);
+    if (line_count >= MAX_LINES)
+    {
+        refresh_ptr = display_history + (((tail + 1) % MAX_LINES) * 80);
+    }
+
+    for (int i = 0; i < MAX_LINES; i++)
+    {
+        printf("%d refresh: %s\n", i, refresh_ptr);
+        gl_draw_string(new_x, new_y, refresh_ptr, GL_GREEN);
+
+        new_y += FONT_HEIGHT;
+
+        refresh_ptr = display_history + (80 * ((i + 1) % MAX_LINES));
+
+        if (line_count >= MAX_LINES)
+        {
+            refresh_ptr = display_history + (((tail + 1 + i + 1) % MAX_LINES) * 80);
+        }
+    }
+    //printf("tail: %d\n", tail);
+    //timer_delay(delay);
+    gl_swap_buffer();
+}
+
 void print_history(void)
 {
     for (int i = 0; i < 10; i++)
@@ -63,54 +101,6 @@ void print_history(void)
         printf("index: %d   %s \n", i, display_history + (80 * i));
     }
     printf("TAIL index: %d\n", tail);
-}
-
-static void scroll_down(void)
-{
-    int new_x = 0;
-    int new_y = 0;
-
-    char *scroll_ptr = display_history;
-    scroll_ptr += 80;
-    scroll_ptr += tail * 80;
-
-    console_clear();
-
-    for (int i = 0; i < MAX_LINES; i++)
-    {
-        gl_draw_string(new_x, new_y, scroll_ptr, GL_GREEN);
-        new_y += FONT_HEIGHT + 2;
-        scroll_ptr += 80;
-    }
-}
-
-void store_line(void)
-{
-    *cur_char_history = '\0'; // close current string
-    //printf("cur_char_history: %s\n", display_history + (80 * tail));
-
-    // move to the next index
-    line_count++;
-    tail = line_count % MAX_LINES;
-
-    cur_char_history = display_history + (80 * tail);
-    *cur_char_history = '\0'; // close the new buf to be empty
-
-    print_history();
-}
-
-void next_line(void)
-{
-    store_line();
-
-    if (line_count >= MAX_LINES)
-    {
-        scroll_down();
-    }
-
-    // move cursor
-    cur_x = 0;
-    cur_y += FONT_HEIGHT + PADDING;
 }
 
 int console_printf(const char *format, ...)
@@ -129,43 +119,89 @@ int console_printf(const char *format, ...)
     }
 
     printf("console printf: %s\n", buf);
+    print_history();
 
     return length;
 }
 
+static void shift_up(void)
+{
+    line_count++;
+    console_clear();
+
+    tail = (tail + 1) % MAX_LINES;
+
+    int new_x = 0;
+    int new_y = 0;
+
+    int temp_tail = tail + 1;
+
+    char *shift_ptr = display_history + (temp_tail * 80);
+
+    for (int i = 0; i < MAX_LINES - 1; i++)
+    {
+        gl_draw_string(new_x, new_y, shift_ptr, GL_GREEN);
+        new_y += FONT_HEIGHT;
+        temp_tail = (temp_tail + 1) % MAX_LINES;
+        shift_ptr = display_history + (80 * temp_tail);
+    }
+    //printf("tail: %d\n", tail);
+    gl_swap_buffer();
+
+    console_clear();
+    new_y = 0;
+    temp_tail = tail + 1;
+    shift_ptr = display_history + (temp_tail * 80);
+
+    for (int i = 0; i < MAX_LINES - 1; i++)
+    {
+        gl_draw_string(new_x, new_y, shift_ptr, GL_GREEN);
+        new_y += FONT_HEIGHT;
+        temp_tail = (temp_tail + 1) % MAX_LINES;
+        shift_ptr = display_history + (80 * temp_tail);
+    }
+
+    cur_char_history = display_history + (tail * 80);
+    char_count = 0;
+}
+
+static void next_line(void)
+{
+    line_count++;
+    char_count = 0;
+    tail = (tail + 1) % MAX_LINES;
+    cur_char_history = display_history + (tail * 80);
+}
+
 static void process_char(char ch)
 {
-    if (cur_x >= MAX_WIDTH)
-    {
-        next_line();
-    }
-    if (cur_y >= MAX_WIDTH)
-    {
-        scroll_down();
-    }
 
-    //if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z'))
-    if (32 <= ch && ch <= 126)
+    if (ch == '\n')
     {
-        gl_draw_char(cur_x, cur_y, ch, GL_GREEN);
-        cur_x += FONT_WIDTH;
+        if (line_count < MAX_LINES - 1)
+        {
+            next_line();
+            refresh();
+        }
+        else
+        {
+            shift_up();
+            console_clear();
+        }
+    }
+    else
+    {
+        // if (char_count >= MAX_CHARS)
+        // {
+        //     next_line();
+        // }
 
-        // add char to the history
         *cur_char_history = ch;
         cur_char_history++;
+        *cur_char_history = '\0';
+
+        //char_count++;
+        refresh();
     }
-    else if (ch == '\r')
-    {
-        next_line();
-    }
-    else if (ch == '\n')
-    {
-        next_line();
-    }
-    else if (ch == '\b')
-    {
-        //gl_draw_char(cur_x, cur_y, ch, GL_GREEN);
-        cur_x -= font_get_width();
-        //cur_y += font_get_height();
-    }
+    //printf("line count: %d\n", line_count);
 }

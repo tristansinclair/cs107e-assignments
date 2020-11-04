@@ -37,35 +37,37 @@ void test_gl_rectangles(void)
 {
     gl_init(_WIDTH, _HEIGHT, GL_DOUBLEBUFFER);
 
-    // gl_clear(0xffffffff + (_WIDTH / 4));
+    gl_clear(0xffffffff + (_WIDTH / 4));
 
-    // for (int a = (_WIDTH / 2); a > 0; a--)
-    // {
-    //     gl_draw_rect(((_WIDTH / 2) - (a / 2)), ((_HEIGHT / 2) - (a / 2)), a, a, 0xffffffff + (a / 2));
-    // }
-    // timer_delay(2);
+    for (int a = (_WIDTH / 2); a > 0; a--)
+    {
+        gl_draw_rect(((_WIDTH / 2) - (a / 2)), ((_HEIGHT / 2) - (a / 2)), a, a, 0xffffffff + (a / 2));
+    }
+    timer_delay(2);
 
-    // /* OUT OF BOUNDS TESTS */
+    /* OUT OF BOUNDS TESTS */
 
-    // // negative x, y, w and h
-    // gl_draw_rect(-20, 0, 100, 100, 0xffffffff);
-    // gl_draw_rect(0, -100, 100, 100, 0xffffffff);
-    // gl_draw_rect(0, 0, -100, 100, 0xffffffff);
-    // gl_draw_rect(0, 0, 100, -100, 0xffffffff);
+    // negative x, y, w and h
+    gl_draw_rect(-20, 0, 100, 100, 0xffffffff);
+    gl_draw_rect(0, -100, 100, 100, 0xffffffff);
+    gl_draw_rect(0, 0, -100, 100, 0xffffffff);
+    gl_draw_rect(0, 0, 100, -100, 0xffffffff);
 
-    // gl_swap_buffer();
-    // // over x and over y
-    // gl_draw_rect(0, 250, _WIDTH + 1000, 100, 0xffffffff);
-    // timer_delay(2);
-    // gl_draw_rect(0, 350, 250, _HEIGHT + 20000, 0xffffffff);
-    // timer_delay(2);
-    // gl_swap_buffer();
+    gl_swap_buffer();
+    // over x and over y
+    gl_draw_rect(0, 250, _WIDTH + 1000, 100, 0xffffffff);
+    timer_delay(2);
+    gl_draw_rect(0, 350, 250, _HEIGHT + 20000, 0xffffffff);
+    timer_delay(2);
+    gl_swap_buffer();
 
     gl_draw_char(60, 10, 'A', GL_AMBER);
     gl_draw_char(80, 10, 'B', GL_AMBER);
     gl_draw_char(100, 10, 'C', GL_AMBER);
 
     gl_draw_string(60, 40, "ABC", GL_AMBER);
+
+    gl_swap_buffer();
 }
 
 void test_gl(void)
@@ -158,15 +160,14 @@ void test_console_etxra(void)
     console_printf("HELLO WORLD 4\n");
     console_printf("HELLO WORLD 5\n");
     console_printf("HELLO WORLD 6\n");
-    timer_delay(1);
     console_printf("HELLO WORLD 7\n");
-    timer_delay(1);
     console_printf("HELLO WORLD 8\n");
-    timer_delay(1);
     console_printf("HELLO WORLD 9\n");
     timer_delay(1);
     console_printf("HELLO WORLD 10\n");
     timer_delay(1);
+    console_printf("!@#$%%^&*()_+-=[]{}:\";'<>?,./`~");
+    console_printf("!@#$%%^&*()_+-=[]{}:\";'<>?,./`~");
     console_printf("HELLO WORLD 11\n");
     timer_delay(1);
     console_printf("HELLO WORLD 12\n");

@@ -18,6 +18,8 @@ typedef struct
 // fb is volatile because the GPU will write to it
 static volatile fb_config_t fb __attribute__((aligned(16)));
 
+static fb_mode_t _mode;
+
 void fb_init(unsigned int width, unsigned int height, unsigned int depth_in_bytes, fb_mode_t mode)
 {
     fb.width = width;
@@ -26,12 +28,15 @@ void fb_init(unsigned int width, unsigned int height, unsigned int depth_in_byte
     if (mode == FB_SINGLEBUFFER) //  allow double buffer support
     {
         fb.virtual_height = height;
+        fb.virtual_width = width;
     }
     else
     {
         fb.virtual_height = height * 2;
+        fb.virtual_width = width;
     }
-    fb.virtual_width = width;
+    //fb.virtual_width = width;
+    _mode = mode;
 
     fb.bit_depth = depth_in_bytes * 8; // convert number of bytes to number of bits
     fb.x_offset = 0;
@@ -58,7 +63,12 @@ void fb_swap_buffer(void)
 
 void *fb_get_draw_buffer(void)
 {
-    return fb.y_offset == 0 ? (void *)fb.framebuffer : (void *)((char *)fb.framebuffer + (fb.total_bytes / 2));
+    if (_mode == FB_SINGLEBUFFER)
+    {
+        return (void *)fb.framebuffer;
+    }
+
+    return fb.y_offset == 0 ? (void *)((char *)fb.framebuffer + (fb.total_bytes / 2)) : (void *)fb.framebuffer;
 }
 
 unsigned int fb_get_width(void)

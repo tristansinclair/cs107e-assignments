@@ -122,8 +122,8 @@ void gl_draw_char(int x, int y, int ch, color_t c)
 
     unsigned char(*char_buf_2d)[font_width] = char_buf;
 
-    unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
-    unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
+    // unsigned int pixels_per_row = fb_get_pitch() / fb_get_depth();
+    // unsigned int(*fb)[pixels_per_row] = fb_get_draw_buffer();
 
     for (int _y = y; _y < (y + font_height); _y++)
     {
@@ -131,7 +131,7 @@ void gl_draw_char(int x, int y, int ch, color_t c)
         {
             if (char_buf_2d[_y - y][_x - x] == 0xff)
             {
-                fb[_y][_x] = c;
+                gl_draw_pixel(_x, _y, c);
             }
         }
     }

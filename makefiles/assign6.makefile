@@ -1,4 +1,4 @@
-MY_MODULES = console.o fb.o gl.o 
+MY_MODULES = console.o fb.o gl.o keyboard.o shell.o gpio.o timer.o strings.o backtrace.o malloc.o printf.o 
 
 # MY_MODULES is a list of those library modules (such as gpio.o)
 # for which you intend to use your own code. The reference implementation
