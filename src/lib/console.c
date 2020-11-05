@@ -29,7 +29,6 @@ static unsigned int char_count = 0;     // current chars in a line
 
 #define MAX_CHARS 84 // 80 for console + for for "pi> " to fix issues
 
-
 #define BACKGROUND_COLOR 0x0  // black
 #define TEXT_COLOR 0xFF00FF00 // GL_GREEN
 //#define LINE_PADDING 3 // 2 pixels
@@ -217,8 +216,10 @@ static void formfeed(void)
  */
 static void process_char(char ch)
 {
-    if (ch == '\n')
+
+    switch (ch)
     {
+    case '\n':
         if (line_count < MAX_LINES - 1)
         {
             next_line();
@@ -227,22 +228,18 @@ static void process_char(char ch)
         {
             shift_up();
         }
-    }
-    else if (ch == '\b')
-    {
-        backspace();
-    }
-    else if (ch == '\f')
-    {
-        formfeed();
-    }
-    else if (ch == '\r')
-    {
-        cur_x = 0;
-    }
+        break;
 
-    else
-    {
+    case '\b':
+        backspace();
+        break;
+    case '\f':
+        formfeed();
+        break;
+    case '\r':
+        cur_x = 0;
+        break;
+    default:
         // handle wrap/shift
         if (char_count >= MAX_CHARS_PER_LINE)
         {
