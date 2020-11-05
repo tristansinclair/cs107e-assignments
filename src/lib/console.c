@@ -29,13 +29,15 @@ static unsigned int char_count = 0;     // current chars in a line
 
 #define MAX_CHARS 84 // 80 for console + for for "pi> " to fix issues
 
+
 #define BACKGROUND_COLOR 0x0  // black
 #define TEXT_COLOR 0xFF00FF00 // GL_GREEN
+//#define LINE_PADDING 3 // 2 pixels
 
 void console_init(unsigned int nrows, unsigned int ncols)
 {
     FONT_WIDTH = font_get_width();
-    FONT_HEIGHT = font_get_height();
+    FONT_HEIGHT = font_get_height() + 4; // add a little padding for chars
 
     MAX_WIDTH = ncols * (FONT_WIDTH);
     MAX_HEIGHT = nrows * (FONT_HEIGHT);
