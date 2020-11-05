@@ -211,6 +211,7 @@ void test_console_etxra(void)
     console_printf("IT WILL DISPLAY: HELLO WORLD. \nTHEN DELETE: WORLD\n");
 
     console_printf(" \nHELLO WORLD.");
+    timer_delay(4);
     for (int j = 0; j < 7; j++)
     {
         timer_delay(1);
