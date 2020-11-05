@@ -33,6 +33,29 @@ void test_fb(void)
     timer_delay(3);
 }
 
+void test_gl(void)
+{
+    // Double buffer mode, make sure you test single buffer too!
+    gl_init(_WIDTH, _HEIGHT, GL_DOUBLEBUFFER);
+
+    // Background is purple
+    gl_clear(gl_color(0x55, 0, 0x55));
+
+    // Draw green pixel at an arbitrary spot
+    gl_draw_pixel(_WIDTH / 3, _HEIGHT / 3, GL_GREEN);
+    assert(gl_read_pixel(_WIDTH / 3, _HEIGHT / 3) == GL_GREEN);
+
+    // Blue rectangle in center of screen
+    gl_draw_rect(_WIDTH / 2 - 50, _HEIGHT / 2 - 50, 100, 100, GL_BLUE);
+
+    // Single amber character
+    gl_draw_char(60, 10, 'A', GL_AMBER);
+
+    // Show buffer with drawn contents
+    gl_swap_buffer();
+    timer_delay(3);
+}
+
 void test_gl_rectangles(void)
 {
     gl_init(_WIDTH, _HEIGHT, GL_DOUBLEBUFFER);
@@ -70,45 +93,6 @@ void test_gl_rectangles(void)
     gl_swap_buffer();
 }
 
-void test_gl(void)
-{
-    // Double buffer mode, make sure you test single buffer too!
-    gl_init(_WIDTH, _HEIGHT, GL_DOUBLEBUFFER);
-
-    // Background is purple
-    gl_clear(gl_color(0x55, 0, 0x55));
-
-    // Draw green pixel at an arbitrary spot
-    gl_draw_pixel(_WIDTH / 3, _HEIGHT / 3, GL_GREEN);
-    assert(gl_read_pixel(_WIDTH / 3, _HEIGHT / 3) == GL_GREEN);
-
-    // Blue rectangle in center of screen
-    gl_draw_rect(_WIDTH / 2 - 50, _HEIGHT / 2 - 50, 100, 100, GL_BLUE);
-
-    // Single amber character
-    gl_draw_char(60, 10, 'A', GL_AMBER);
-
-    // Show buffer with drawn contents
-    gl_swap_buffer();
-    timer_delay(3);
-}
-
-void hello_c(void)
-{
-    gl_init(1280, 1024, GL_DOUBLEBUFFER);
-
-    while (1)
-    {
-        gl_clear(GL_BLACK);
-        gl_draw_string(20, 20, "hello, world 0", GL_WHITE);
-        gl_swap_buffer();
-
-        gl_clear(GL_BLACK);
-        gl_draw_string(20, 20, "hello, world 1", GL_WHITE);
-        gl_swap_buffer();
-    }
-}
-
 void test_gl_extra2(void)
 {
     gl_init(1280, 1024, GL_DOUBLEBUFFER);
@@ -124,6 +108,22 @@ void test_gl_extra2(void)
         gl_draw_string(20, 20, "hello, world 1", GL_WHITE);
         gl_swap_buffer();
         counter++;
+    }
+}
+
+void hello_c(void)
+{
+    gl_init(1280, 1024, GL_DOUBLEBUFFER);
+
+    while (1)
+    {
+        gl_clear(GL_BLACK);
+        gl_draw_string(20, 20, "hello, world 0", GL_WHITE);
+        gl_swap_buffer();
+
+        gl_clear(GL_BLACK);
+        gl_draw_string(20, 20, "hello, world 1", GL_WHITE);
+        gl_swap_buffer();
     }
 }
 
@@ -151,45 +151,82 @@ void test_console(void)
 
 void test_console_etxra(void)
 {
-    console_init(_NROWS, _NCOLS);
+    console_init(40, 40);
 
-    // 1: "HELLO WORLD"
-    console_printf("HELLO WORLD\n");
-    console_printf("HELLO WORLD 2\n");
-    console_printf("HELLO WORLD 3\n");
-    console_printf("HELLO WORLD 4\n");
-    console_printf("HELLO WORLD 5\n");
-    console_printf("HELLO WORLD 6\n");
-    console_printf("HELLO WORLD 7\n");
-    console_printf("HELLO WORLD 8\n");
-    console_printf("HELLO WORLD 9\n");
-    timer_delay(1);
-    console_printf("HELLO WORLD 10\n");
+    console_printf("\n----------------------------------------\n");
+    console_printf("|          FULL CONSOLE TESTING        |\n");
+    console_printf("|   CONSOLE SIZE: 40 x 40 (in chars)   |\n");
+    console_printf("----------------------------------------\n");
 
-    timer_delay(3);
-    console_printf("12345678901234567890123456\n");
-    timer_delay(3);
-    console_printf("HELLO WORLD 11\n");
-    timer_delay(3);
-    console_printf("HELLO WORLD 12\n");
-    timer_delay(3);
-    console_printf("12345678901234567890123456\n");
-    console_printf("HELLO WORLD 13\n");
+    console_printf(" \n \n");
+
+    console_printf("----------------------------------------\n");
+    console_printf("|              SCROLL TEST             |\n");
+    console_printf("----------------------------------------\n");
+    timer_delay(2);
+
+    for (int i = 1; i < 41; i++)
+    {
+        console_printf("HELLO WORLD %d\n", i);
+    }
+
+    console_printf(" \n----------------------------------------\n");
+    console_printf("|        SCROLLING TEST COMPLETE       |\n");
+    console_printf("----------------------------------------\n");
+    timer_delay(2);
+
+    console_printf(" \n----------------------------------------\n");
+    console_printf("|               WRAP TEST              |\n");
+    console_printf("----------------------------------------\n");
+    timer_delay(2);
+
+    console_printf("Aa Bb Cc Dd Ee Ff Gg Hh Ii Jk Ll Mn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz\n");
+    console_printf("1 2 3 4 5 6 7 8 9 0 ! @ # $ %% ^ & * ( ) _ + - = { } [ ] | : ; < > , . ? /\n");
+
+    console_printf(" \n----------------------------------------\n");
+    console_printf("|           WRAP TEST COMPLETE         |\n");
+    console_printf("----------------------------------------\n");
+    timer_delay(2);
+
+    console_printf(" \n----------------------------------------\n");
+    console_printf("|           TESTING CLEAR (f)          |\n");
+    console_printf("----------------------------------------\n");
+    console_printf("1.......");
     timer_delay(1);
-    console_printf("HELLO WORLD 14\n");
+    console_printf("2.......");
     timer_delay(1);
-    console_printf("HELLO WORLD 15\n");
+    console_printf("3.......");
     timer_delay(1);
+
+    console_printf("\f");
+    console_printf("CLEARED.\n");
+
+    timer_delay(2);
+
+    console_printf("\n----------------------------------------\n");
+    console_printf("|         TESTING BACKSPACE (b)        |\n");
+    console_printf("----------------------------------------\n");
+
+    console_printf("NEXT LINE WILL DEMONSTRATE TEST:\n");
+    console_printf("IT WILL DISPLAY: HELLO WORLD. \nTHEN DELETE: WORLD\n");
+
+    console_printf(" \nHELLO WORLD.");
+    for (int j = 0; j < 7; j++)
+    {
+        timer_delay(1);
+        console_printf("\b");
+    }
+
+    console_printf(" \n \nTESTS COMPLETED.");
+    timer_delay(1);
+    console_printf(".");
+    timer_delay(1);
+    console_printf(".");
+    timer_delay(1);
+    console_printf(".");
+
+    console_printf(" \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \nI really hope someone runs this and it  wasn't a waste of time.\n");
 }
-
-/* TODO: Add tests to test your graphics library and console.
-   For the graphics library, test both single & double
-   buffering and confirm all drawing is clipeed to bounds
-   of framebuffer
-   For the console, make sure to test wrap-around and scrolling.
-   Be sure to test each module separately as well as in combination
-   with others.
-*/
 
 void main(void)
 {
@@ -197,10 +234,11 @@ void main(void)
     timer_init();
     printf("Executing main() in test_gl_console.c\n");
 
-    //test_gl_rectangles();
     //test_fb();
-    //test_gl_extra2();
+
     //test_gl();
+    //test_gl_extra2();
+    //test_gl_rectangles();
     //test_console();
     test_console_etxra();
 
