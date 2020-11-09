@@ -63,4 +63,10 @@ abort_asm:
 
 @ You implement this function
 interrupt_asm:
-    b interrupt_asm
+    mov sp, #0x8000
+    sub lr, lr, #4
+    push {r0-r12, lr}
+    mov r0, lr
+    bl interrupt_dispatch
+    ldm sp!, {r0-r12, pc}^
+    

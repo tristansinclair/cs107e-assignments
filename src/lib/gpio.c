@@ -10,6 +10,8 @@ struct gpio
     unsigned int CLR[2];
     unsigned int reservedC;
     unsigned int LEV[2];
+    unsigned int reservedD;
+    unsigned int EDS[2];
 };
 
 volatile struct gpio *gpio = (struct gpio *)0x20200000; // Point to beginning of struct

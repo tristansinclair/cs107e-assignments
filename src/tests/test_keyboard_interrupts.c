@@ -46,7 +46,7 @@ void main(void)
     keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
 
 
-    test_clock_events();  // wait 10 seconds for clock_edge handler to report clock edges
-    //test_read_delay();  // what happens to keys typed while main program blocked in delay?
+    //test_clock_events();  // wait 10 seconds for clock_edge handler to report clock edges
+    test_read_delay();  // what happens to keys typed while main program blocked in delay?
     uart_putchar(EOT);
 }
