@@ -4,6 +4,7 @@
 #include "ps2.h"
 #include "timer.h"
 #include "printf.h"
+#include "gpio_interrupts.h"
 
 enum
 {
@@ -92,7 +93,7 @@ static void ps2_write(unsigned char command)
 
 static int read_bit(void)
 {
-    wait_for_falling_clock_edge();
+    //wait_for_falling_clock_edge();
 
     return gpio_read(DATA);
 }
@@ -105,14 +106,16 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     CLK = clock_gpio;
     gpio_set_input(CLK);
     gpio_set_pullup(CLK);
+    gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE);
 
     DATA = data_gpio;
     gpio_set_input(DATA);
     gpio_set_pullup(DATA);
 
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FIX
     // throw away the [aa] after the reset
     keyboard_read_scancode();
-    keyboard_read_scancode(); 
+    keyboard_read_scancode();
 }
 
 unsigned char keyboard_read_scancode(void)

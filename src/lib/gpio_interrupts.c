@@ -13,7 +13,7 @@
 
 #define GPIO_PIN_COUNT 54
 
-struct gpio
+struct gpio2
 {
     unsigned int FSEL[6];
     unsigned int reservedA;
@@ -26,7 +26,7 @@ struct gpio
     unsigned int EDS[2];
 };
 
-volatile struct gpio *gpio = (struct gpio *)0x20200000; // Point to beginning of struct
+volatile struct gpio2 *gpio2 = (struct gpio2 *)0x20200000; // Point to beginning of struct
 static struct
 {
     handler_fn_t fn;
@@ -35,7 +35,7 @@ static struct
 /*
  * Module to configure GPIO interrupts for Raspberry Pi.
  * Because all of the GPIO pins share a small set of GPIO
- * interrupts, you need a level of indirectiom to be able
+ * interrupts, you need a level of˝ indirectiom to be able
  * to handle interrupts for particular pins. This module
  * allows a client to register one handler for each
  * GPIO pin.
@@ -99,8 +99,8 @@ extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assemb
 
 static int gpio_interrupts_get_next(void)
 {
-    unsigned int eds0_zeroes = count_leading_zeroes(gpio->EDS[0]);
-    unsigned int eds1_zeroes = count_leading_zeroes(gpio->EDS[1]);
+    unsigned int eds0_zeroes = count_leading_zeroes(gpio2->EDS[0]);
+    unsigned int eds1_zeroes = count_leading_zeroes(gpio2->EDS[1]);
 
     if (eds0_zeroes != 32)
     {
