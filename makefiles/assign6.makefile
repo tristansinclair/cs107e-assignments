@@ -1,4 +1,4 @@
-MY_MODULES = console.o fb.o gl.o keyboard.o shell.o gpio.o timer.o strings.o backtrace.o malloc.o printf.o 
+MY_MODULES = console.o fb.o gl.o 
 
 # MY_MODULES is a list of those library modules (such as gpio.o)
 # for which you intend to use your own code. The reference implementation
@@ -38,7 +38,7 @@ CFLAGS_EXTRA = -Werror
 CFLAGS 	= -I$(CS107E)/include -Iinclude -Og -g -Wall -std=c99 -ffreestanding $(CFLAGS_EXTRA)
 CFLAGS += -mapcs-frame -fno-omit-frame-pointer -mpoke-function-name -Wpointer-arith
 LDFLAGS	= -nostdlib -T src/boot/memmap -L$(CS107E)/lib
-LDLIBS 	= -lpi -lgcc -lref_pi
+LDLIBS 	= -lpi -lref_pi -lgcc 
 
 # Search for .c and .s files in the src directory's subdirectories.
 # https://www.cmcrossroads.com/article/basics-vpath-and-vpath
