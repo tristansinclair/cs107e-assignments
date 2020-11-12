@@ -7,6 +7,5 @@
 *.exe
 *.list
 *.o
-include/test-framework.h
 .logs/*
 Makefile
