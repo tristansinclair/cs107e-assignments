@@ -41,10 +41,10 @@
 
 ## Assignment 6: fb, gl, and console
 
-####  Basic functionality: <!--assign6-basic-->
-####  Extension functionality: <!--assign6-extension-->
-####  Code quality: <!--assign6-style-->
-####  Test quality: <!--assign6-test-->
+####  Basic functionality: `9.0/10.0`<!--assign6-basic-->
+####  Extension functionality: `5.0/5.0`<!--assign6-extension-->
+####  Code quality: `ok`<!--assign6-style-->
+####  Test quality: `+`<!--assign6-test-->
 
 ## Assignment 7: interrupts
 
