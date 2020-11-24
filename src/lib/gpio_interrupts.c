@@ -2,6 +2,7 @@
 #include "gpio_interrupts.h"
 #include "gpio.h"
 #include "assert.h"
+#include "interrupts.h"
 
 /*
  * Notes:
@@ -37,6 +38,45 @@ static struct
     handler_fn_t fn;
 } handlers[GPIO_PIN_COUNT];
 
+
+extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assembly
+
+/**
+ * gpio_interrupts_get_next
+ * returns the index of gpio pin which triggered an interrupt
+*/
+static unsigned int gpio_interrupts_get_next(void)
+{
+    unsigned int eds0_zeroes = count_leading_zeroes(gpio->EDS[0]);
+    unsigned int eds1_zeroes = count_leading_zeroes(gpio->EDS[1]);
+
+    if (eds0_zeroes != 32)
+    {
+        return 31 - eds0_zeroes;
+    }
+    else if (eds1_zeroes != 32)
+    {
+        return 63 - eds1_zeroes;
+    }
+    else
+    {
+        return INTERRUPTS_NONE;
+    }
+}
+
+/**
+ * gpio_interrupt_dispatch
+ * 
+*/
+static void gpio_interrupt_dispatch(unsigned int pc)
+{
+    int next_interrupt = gpio_interrupts_get_next();
+    if (next_interrupt < GPIO_PIN_COUNT)
+    {
+        handlers[next_interrupt].fn(pc);
+    }
+}
+
 /*
  * Module to configure GPIO interrupts for Raspberry Pi.
  * Because all of the GPIO pins share a small set of GPIO
@@ -71,6 +111,7 @@ void gpio_interrupts_init(void)
 {
     gpio_interrupts_disable();
     //gpio_interrupts_enable();
+    interrupts_register_handler(INTERRUPTS_GPIO3, (handler_fn_t)gpio_interrupt_dispatch);
 
     for (int i = 0; i < GPIO_PIN_COUNT; i++)
     {
@@ -96,44 +137,6 @@ void gpio_interrupts_enable(void)
 void gpio_interrupts_disable(void)
 {
     interrupts_disable_source(INTERRUPTS_GPIO3); // enable interrupts on all GPIO Pins
-}
-
-extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assembly
-
-/**
- * gpio_interrupts_get_next
- * returns the index of gpio pin which triggered an interrupt
-*/
-static unsigned int gpio_interrupts_get_next(void)
-{
-    unsigned int eds0_zeroes = count_leading_zeroes(gpio->EDS[0]);
-    unsigned int eds1_zeroes = count_leading_zeroes(gpio->EDS[1]);
-
-    if (eds0_zeroes != 32)
-    {
-        return 31 - eds0_zeroes;
-    }
-    else if (eds1_zeroes != 32)
-    {
-        return 63 - eds1_zeroes;
-    }
-    else
-    {
-        return INTERRUPTS_NONE;
-    }
-}
-
-/**
- * gpio_interrupt_dispatch
- * 
-*/
-void gpio_interrupt_dispatch(unsigned int pc)
-{
-    int next_interrupt = gpio_interrupts_get_next();
-    if (next_interrupt < GPIO_PIN_COUNT)
-    {
-        handlers[next_interrupt].fn(pc);
-    }
 }
 
 /* 

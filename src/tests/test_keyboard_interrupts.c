@@ -8,6 +8,7 @@
 #include "gpio.h"
 #include "gpioextra.h"
 #include "gpio_interrupts.h"
+#include "pi.h"
 
 void test_clock_events(void)
 {
@@ -43,18 +44,36 @@ void test_read_delay(void)
 }
 
 static unsigned BUTTON = GPIO_PIN20;
+static unsigned BUTTON2 = GPIO_PIN21;
 
 volatile static int counter = 0;
+volatile static int counter2 = 0;
 
-bool button_press(unsigned int pc)
+static bool button_press(unsigned int pc)
 {
     if (gpio_check_and_clear_event(BUTTON))
     {
-        printf("times button pressed: %d\n", counter);
+        printf("times button1 pressed: %d\n", counter);
         //rb_enqueue(rb, counter);
         counter++;
 
-        timer_delay(5);
+        //timer_delay(5);
+
+        return true;
+    }
+
+    return false;
+}
+
+static bool button_press_2(unsigned int pc)
+{
+    if (gpio_check_and_clear_event(BUTTON2))
+    {
+        printf("times button2 pressed: %d\n", counter2);
+        //rb_enqueue(rb, counter);
+        counter2++;
+
+        //timer_delay(5);
 
         return true;
     }
@@ -64,15 +83,6 @@ bool button_press(unsigned int pc)
 
 extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assembly
 
-static void wait_for_falling_clock_edge(void)
-{
-    while (gpio_read(BUTTON) == 0)
-    {
-    }
-    while (gpio_read(BUTTON) == 1)
-    {
-    }
-}
 
 static void test_gpio_interrupts(void)
 {
@@ -80,23 +90,31 @@ static void test_gpio_interrupts(void)
     assert(count_leading_zeroes(0xffffffff) == 0);
     assert(count_leading_zeroes(0x4) == 29);
     printf("count_leading_zeros test success!\n");
-    printf("TEST\n");
 
-    // gpio_interrupts_init();
-    // gpio_interrupts_enable();
-    // gpio_interrupts_register_handler(BUTTON, button_press);
-
+    // enable gpio stuff
     gpio_set_input(BUTTON);
     gpio_set_pullup(BUTTON);
+    gpio_set_input(BUTTON2);
+    gpio_set_pullup(BUTTON2);
 
-    wait_for_falling_clock_edge();
+    // interupt enables
+    gpio_interrupts_init();
+    gpio_interrupts_enable();
+    gpio_enable_event_detection(BUTTON, GPIO_DETECT_FALLING_EDGE);
+    gpio_enable_event_detection(BUTTON2, GPIO_DETECT_FALLING_EDGE);
 
+    // configure functions for handler
+    gpio_interrupts_register_handler(BUTTON, button_press);
+    gpio_interrupts_register_handler(BUTTON2, button_press_2);
 
-
+    // this will spin while counter is < 25 and do nothing
+    // a button press will interrupt, printf, and increment
     while (counter < 25)
     {
         
     }
+
+    printf("Successful GPIO Interrupt Test!!\n");
 }
 
 
@@ -106,12 +124,18 @@ void main(void)
     gpio_init();
     timer_init();
     uart_init();
-    //interrupts_global_enable();
+    interrupts_init();
+    interrupts_global_enable();
     //keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
 
     test_gpio_interrupts();
 
     //test_clock_events(); // wait 10 seconds for clock_edge handler to report clock edges
     //test_read_delay();  // what happens to keys typed while main program blocked in delay?
+
+
+    printf("detaching and rebooting...");
     uart_putchar(EOT);
+    timer_delay(4);
+    pi_reboot();
 }

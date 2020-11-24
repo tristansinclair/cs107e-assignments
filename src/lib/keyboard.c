@@ -118,10 +118,8 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     // keyboard_read_scancode();
     // keyboard_read_scancode();
 
-    gpio_interrupts_enable();
-    // enables gpio interrupts
-    gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE);
-    // enables event detection on CLK line for falling edge
+    gpio_interrupts_enable(); // enables gpio interrupts
+    gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE); // enables event detection on CLK line for falling edge
     gpio_interrupts_register_handler(CLK, (handler_fn_t)keyboard_read_scancode); // registers the read_bit function to be called when CLK is triggered
 }
 
