@@ -26,6 +26,7 @@ static unsigned DATA = GPIO_PIN4;
 
 static unsigned int bit_counter = 0;
 static unsigned char scancode = 0;
+static unsigned int parity_bit = 0;
 static unsigned int timer = 0;
 static int split = 0;
 
@@ -112,11 +113,12 @@ static bool read_bit(void)
     if (bit_counter == 0) // if start bit
     {
         bit_counter++;
+        return false;
     }
-    else if (bit_counter != 10) // while not end bit
+    else if (bit_counter < 9) // while not end bit
     {
         timer = timer_get_ticks();
-        scancode |= (gpio_read(DATA) << (bit_counter - 1));
+        scancode |= (gpio_read(DATA) << (bit_counter - 2));
         split = timer_get_ticks() - timer;
         if (split > 3000) // check it's under 3 milliseconds
         {
@@ -126,8 +128,19 @@ static bool read_bit(void)
         }
         bit_counter++;
     }
+    else if (bit_counter == 9)
+    {
+        parity_bit = gpio_read(DATA);
+        bit_counter++;
+    }
     else
     {
+        if ((has_odd_parity(scancode) + parity_bit) % 2 == 1)
+        {
+            bit_counter = 0;
+            scancode = 0;
+            return false;
+        }
         rb_enqueue(rb, scancode);
         bit_counter = 0;
         scancode = 0;
@@ -147,18 +160,16 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     gpio_set_input(DATA);
     gpio_set_pullup(DATA);
 
-
     gpio_interrupts_init();
     gpio_interrupts_enable();
     // enables gpio interrupts
     gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE);    // enables event detection on CLK line for falling edge
     gpio_interrupts_register_handler(CLK, (handler_fn_t)read_bit); // registers the read_bit function to be called when CLK is triggered
 
-
     rb = rb_new();
 
     // after reset, keyboard sends and ACK code
-    assert(keyboard_read_scancode() == PS2_CODE_ACK);
+    //assert(keyboard_read_scancode() == PS2_CODE_ACK);
     // assert(keyboard_read_scancode() == 0xaa);
 }
 
