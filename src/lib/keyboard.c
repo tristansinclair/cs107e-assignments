@@ -24,11 +24,12 @@ enum
 static unsigned CLK = GPIO_PIN3;
 static unsigned DATA = GPIO_PIN4;
 
+static unsigned int bit = 0;
 static unsigned int bit_counter = 0;
 static unsigned char scancode = 0;
 static unsigned int parity_bit = 0;
-static unsigned int timer = 0;
-static int split = 0;
+// static unsigned int timer = 0;
+// static int split = 0;
 
 rb_t *rb;
 
@@ -105,15 +106,27 @@ static void ps2_write(unsigned char command)
 
 static bool read_bit(unsigned int pc)
 {
+    // split = timer_get_ticks() - timer;
+    // if (split > 3000) // throw away scancodes that take too long to read
+    // {
+    //     bit_counter = 0;
+    //     scancode = 0;
+    //     return false;
+    // }
+    // timer = timer_get_ticks();
+
     if (!gpio_check_and_clear_event(CLK)) // check and clear event
     {
         return false;
     }
 
+    bit = gpio_read(DATA);
+
     switch (bit_counter)
     {
+    // start bit
     case 0:
-        if (gpio_read(DATA) == 0)
+        if (bit == 0)
         {
             bit_counter++;
             break;
@@ -123,7 +136,7 @@ static bool read_bit(unsigned int pc)
             scancode = 0;
             break;
         }
-
+    // data bits 1 - 8
     case 1:
     case 2:
     case 3:
@@ -132,24 +145,16 @@ static bool read_bit(unsigned int pc)
     case 6:
     case 7:
     case 8:
-        timer = timer_get_ticks();
         scancode |= (gpio_read(DATA) << (bit_counter - 1));
-        split = timer_get_ticks() - timer;
-        if (split > 3000) // check it's under 3 milliseconds
-        {
-            bit_counter = 0;
-            scancode = 0;
-            return false;
-        }
         bit_counter++;
         break;
 
     case 9:
-        parity_bit = gpio_read(DATA);
+        parity_bit = bit;
         bit_counter++;
         break;
     case 10:
-        if (gpio_read(DATA) == 1)
+        if (bit == 1)
         {
             //bit_counter++;
             break;
@@ -200,10 +205,6 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     gpio_interrupts_register_handler(CLK, (handler_fn_t)read_bit); // registers the read_bit function to be called when CLK is triggered
 
     rb = rb_new();
-
-    // after reset, keyboard sends and ACK code
-    //assert(keyboard_read_scancode() == PS2_CODE_ACK);
-    // assert(keyboard_read_scancode() == 0xaa);
 }
 
 static int *p_elem; // gives us a place to write scancode to
