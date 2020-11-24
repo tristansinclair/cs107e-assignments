@@ -103,22 +103,37 @@ static void ps2_write(unsigned char command)
     //wait_for_falling_clock_edge();
 }
 
-static bool read_bit(void)
+static bool read_bit(unsigned int pc)
 {
     if (!gpio_check_and_clear_event(CLK)) // check and clear event
     {
         return false;
     }
 
-    if (bit_counter == 0) // if start bit
+    switch (bit_counter)
     {
-        bit_counter++;
-        return false;
-    }
-    else if (bit_counter < 9) // while not end bit
-    {
+    case 0:
+        if (gpio_read(DATA) == 0)
+        {
+            bit_counter++;
+            break;
+        }
+        else
+        {
+            scancode = 0;
+            break;
+        }
+
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
         timer = timer_get_ticks();
-        scancode |= (gpio_read(DATA) << (bit_counter - 2));
+        scancode |= (gpio_read(DATA) << (bit_counter - 1));
         split = timer_get_ticks() - timer;
         if (split > 3000) // check it's under 3 milliseconds
         {
@@ -127,25 +142,43 @@ static bool read_bit(void)
             return false;
         }
         bit_counter++;
-    }
-    else if (bit_counter == 9)
-    {
+        break;
+
+    case 9:
         parity_bit = gpio_read(DATA);
         bit_counter++;
-    }
-    else
-    {
-        if ((has_odd_parity(scancode) + parity_bit) % 2 == 1)
+        break;
+    case 10:
+        if (gpio_read(DATA) == 1)
+        {
+            //bit_counter++;
+            break;
+        }
+        else
+        {
+            scancode = 0;
+            bit_counter = 0;
+            parity_bit = 0;
+            break;
+        }
+        if ((has_odd_parity(scancode) + parity_bit) % 2 != 1)
         {
             bit_counter = 0;
             scancode = 0;
-            return false;
+            parity_bit = 0;
+            break;
         }
+    }
+
+    if (bit_counter == 10)
+    {
         rb_enqueue(rb, scancode);
         bit_counter = 0;
         scancode = 0;
+        return true;
     }
-    return true;
+
+    return false;
 }
 
 void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
