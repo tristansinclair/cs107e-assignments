@@ -4,6 +4,10 @@
 #include "timer.h"
 #include "uart.h"
 
+#include "assert.h"
+#include "gpio.h"
+#include "gpioextra.h"
+#include "gpio_interrupts.h"
 
 void test_clock_events(void)
 {
@@ -11,7 +15,6 @@ void test_clock_events(void)
     timer_delay(10);
     printf("Time's up!\n");
 }
-
 
 /*
  * This function tests the behavior of the assign5 keyboard
@@ -23,12 +26,14 @@ void test_clock_events(void)
  */
 void test_read_delay(void)
 {
-    while (1) {
+    while (1)
+    {
         printf("Test program waiting for you to press a key (q to quit): ");
         uart_flush();
         char ch = keyboard_read_next();
         printf("\nRead: %c\n", ch);
-        if (ch == 'q') break;
+        if (ch == 'q')
+            break;
         printf("Test program will now pause for 1 second... ");
         uart_flush();
         timer_delay(1);
@@ -37,16 +42,76 @@ void test_read_delay(void)
     printf("\nGoodbye!\n");
 }
 
+static unsigned BUTTON = GPIO_PIN20;
+
+volatile static int counter = 0;
+
+bool button_press(unsigned int pc)
+{
+    if (gpio_check_and_clear_event(BUTTON))
+    {
+        printf("times button pressed: %d\n", counter);
+        //rb_enqueue(rb, counter);
+        counter++;
+
+        timer_delay(5);
+
+        return true;
+    }
+
+    return false;
+}
+
+extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assembly
+
+static void wait_for_falling_clock_edge(void)
+{
+    while (gpio_read(BUTTON) == 0)
+    {
+    }
+    while (gpio_read(BUTTON) == 1)
+    {
+    }
+}
+
+static void test_gpio_interrupts(void)
+{
+    assert(count_leading_zeroes(0x0) == 32);
+    assert(count_leading_zeroes(0xffffffff) == 0);
+    assert(count_leading_zeroes(0x4) == 29);
+    printf("count_leading_zeros test success!\n");
+    printf("TEST\n");
+
+    // gpio_interrupts_init();
+    // gpio_interrupts_enable();
+    // gpio_interrupts_register_handler(BUTTON, button_press);
+
+    gpio_set_input(BUTTON);
+    gpio_set_pullup(BUTTON);
+
+    wait_for_falling_clock_edge();
+
+
+
+    while (counter < 25)
+    {
+        
+    }
+}
+
+
 
 void main(void)
 {
     gpio_init();
     timer_init();
     uart_init();
-    keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
+    //interrupts_global_enable();
+    //keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
 
+    test_gpio_interrupts();
 
-    test_clock_events();  // wait 10 seconds for clock_edge handler to report clock edges
+    //test_clock_events(); // wait 10 seconds for clock_edge handler to report clock edges
     //test_read_delay();  // what happens to keys typed while main program blocked in delay?
     uart_putchar(EOT);
 }

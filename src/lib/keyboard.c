@@ -4,6 +4,7 @@
 #include "ps2.h"
 #include "timer.h"
 #include "printf.h"
+#include "gpio_interrupts.h"
 
 enum
 {
@@ -69,6 +70,7 @@ static void write_bit(int nbit, unsigned char code)
         break;
     }
 }
+
 // from Phil for handling the reset code
 static void ps2_write(unsigned char command)
 {
@@ -87,12 +89,15 @@ static void ps2_write(unsigned char command)
     }
 
     gpio_set_input(DATA); // done writing, exit from request-to-send
-    wait_for_falling_clock_edge();
+    //wait_for_falling_clock_edge();
 }
 
 static int read_bit(void)
 {
-    wait_for_falling_clock_edge();
+    if (!gpio_check_and_clear_event(CLK))
+    {
+        return false;
+    }
 
     return gpio_read(DATA);
 }
@@ -100,7 +105,6 @@ static int read_bit(void)
 void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
 {
     ps2_write(PS2_CMD_RESET); // send reset code
-    //printf("Reset code Sent.\n");
 
     CLK = clock_gpio;
     gpio_set_input(CLK);
@@ -111,8 +115,14 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     gpio_set_pullup(DATA);
 
     // throw away the [aa] after the reset
-    keyboard_read_scancode();
-    keyboard_read_scancode(); 
+    // keyboard_read_scancode();
+    // keyboard_read_scancode();
+
+    gpio_interrupts_enable();
+    // enables gpio interrupts
+    gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE);
+    // enables event detection on CLK line for falling edge
+    gpio_interrupts_register_handler(CLK, (handler_fn_t)keyboard_read_scancode); // registers the read_bit function to be called when CLK is triggered
 }
 
 unsigned char keyboard_read_scancode(void)
