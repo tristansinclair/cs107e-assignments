@@ -81,16 +81,8 @@ static bool button_press_2(unsigned int pc)
     return false;
 }
 
-extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assembly
-
-
-static void test_gpio_interrupts(void)
+void test_gpio_interrupts(void)
 {
-    assert(count_leading_zeroes(0x0) == 32);
-    assert(count_leading_zeroes(0xffffffff) == 0);
-    assert(count_leading_zeroes(0x4) == 29);
-    printf("count_leading_zeros test success!\n");
-
     // enable gpio stuff
     gpio_set_input(BUTTON);
     gpio_set_pullup(BUTTON);
@@ -111,13 +103,20 @@ static void test_gpio_interrupts(void)
     // a button press will interrupt, printf, and increment
     while (counter < 25)
     {
-        
     }
 
     printf("Successful GPIO Interrupt Test!!\n");
 }
 
+extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assembly
 
+void test_count_leading_zeros(void)
+{
+    assert(count_leading_zeroes(0x0) == 32);
+    assert(count_leading_zeroes(0xffffffff) == 0);
+    assert(count_leading_zeroes(0x4) == 29);
+    printf("count_leading_zeros test success!\n");
+}
 
 void main(void)
 {
@@ -126,16 +125,17 @@ void main(void)
     uart_init();
     interrupts_init();
     interrupts_global_enable();
-    //keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
 
-    test_gpio_interrupts();
+    keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
 
-    //test_clock_events(); // wait 10 seconds for clock_edge handler to report clock edges
-    //test_read_delay();  // what happens to keys typed while main program blocked in delay?
+    //test_count_leading_zeros();
 
+    //test_gpio_interrupts();
+
+    test_clock_events(); // wait 10 seconds for clock_edge handler to report clock edges
+    test_read_delay();   // what happens to keys typed while main program blocked in delay?
 
     printf("detaching and rebooting...");
     uart_putchar(EOT);
-    timer_delay(4);
     pi_reboot();
 }

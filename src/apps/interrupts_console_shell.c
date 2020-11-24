@@ -5,11 +5,12 @@
 #include "timer.h"
 #include "uart.h"
 
+#include "printf.h"
+
 #define NROWS 20
 #define NCOLS 40
 
-
-void main(void) 
+void main(void)
 {
     interrupts_init();
     gpio_init();

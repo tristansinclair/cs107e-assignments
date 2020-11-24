@@ -5,6 +5,9 @@
 #include "timer.h"
 #include "printf.h"
 #include "gpio_interrupts.h"
+#include "ringbuffer.h"
+#include "malloc.h"
+#include "assert.h"
 
 enum
 {
@@ -20,6 +23,13 @@ enum
 };
 static unsigned CLK = GPIO_PIN3;
 static unsigned DATA = GPIO_PIN4;
+
+static unsigned int bit_counter = 0;
+static unsigned char scancode = 0;
+static unsigned int timer = 0;
+static int split = 0;
+
+rb_t *rb;
 
 static void wait_for_falling_clock_edge(void)
 {
@@ -92,14 +102,37 @@ static void ps2_write(unsigned char command)
     //wait_for_falling_clock_edge();
 }
 
-static int read_bit(void)
+static bool read_bit(void)
 {
-    if (!gpio_check_and_clear_event(CLK))
+    if (!gpio_check_and_clear_event(CLK)) // check and clear event
     {
         return false;
     }
 
-    return gpio_read(DATA);
+    if (bit_counter == 0) // if start bit
+    {
+        bit_counter++;
+    }
+    else if (bit_counter != 10) // while not end bit
+    {
+        timer = timer_get_ticks();
+        scancode |= (gpio_read(DATA) << (bit_counter - 1));
+        split = timer_get_ticks() - timer;
+        if (split > 3000) // check it's under 3 milliseconds
+        {
+            bit_counter = 0;
+            scancode = 0;
+            return false;
+        }
+        bit_counter++;
+    }
+    else
+    {
+        rb_enqueue(rb, scancode);
+        bit_counter = 0;
+        scancode = 0;
+    }
+    return true;
 }
 
 void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
@@ -114,71 +147,29 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     gpio_set_input(DATA);
     gpio_set_pullup(DATA);
 
-    // throw away the [aa] after the reset
-    // keyboard_read_scancode();
-    // keyboard_read_scancode();
 
-    gpio_interrupts_enable(); // enables gpio interrupts
-    gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE); // enables event detection on CLK line for falling edge
-    gpio_interrupts_register_handler(CLK, (handler_fn_t)keyboard_read_scancode); // registers the read_bit function to be called when CLK is triggered
+    gpio_interrupts_init();
+    gpio_interrupts_enable();
+    // enables gpio interrupts
+    gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE);    // enables event detection on CLK line for falling edge
+    gpio_interrupts_register_handler(CLK, (handler_fn_t)read_bit); // registers the read_bit function to be called when CLK is triggered
+
+
+    rb = rb_new();
+
+    // after reset, keyboard sends and ACK code
+    assert(keyboard_read_scancode() == PS2_CODE_ACK);
+    // assert(keyboard_read_scancode() == 0xaa);
 }
+
+static int *p_elem; // gives us a place to write scancode to
 
 unsigned char keyboard_read_scancode(void)
 {
-    unsigned char scancode = 0;
-    static unsigned int timer = 0;
-    static int split = 0;
-    while (1)
-    {
-        while (read_bit() != 0) // while not start bit
-        {
-        }
-
-    start:
-        scancode = 0;
-
-        // begin reading data bits
-        for (int i = 0; i < 8; i++) // read in byte of data
-        {
-            timer = timer_get_ticks(); // get current timer
-            scancode |= (read_bit() << i);
-            split = timer_get_ticks() - timer; // get split of how long read_bit() took
-            if (split > 3000)                  // check it's under 3 milliseconds
-            {
-                goto start;
-            }
-        }
-
-        // parity bit
-        timer = timer_get_ticks();
-        int parity_bit = read_bit(); // next bit is parity
-        split = timer_get_ticks() - timer;
-        if (split > 3000)
-        {
-            goto start;
-        }
-
-        timer = timer_get_ticks();
-        int stop_bit = read_bit(); // next bit is stop bit == 1
-        split = timer_get_ticks() - timer;
-        if (split > 3000)
-        {
-            goto start;
-        }
-
-        // check if parity is odd
-        if ((has_odd_parity(scancode) + parity_bit) % 2 != 1)
-        {
-            continue;
-        }
-
-        if (stop_bit != 1)
-        {
-            continue;
-        }
-
-        break;
-    }
+    while (rb_empty(rb))
+        ;
+    rb_dequeue(rb, p_elem);
+    unsigned char scancode = *p_elem;
 
     return scancode;
 }

@@ -68,13 +68,15 @@ static unsigned int gpio_interrupts_get_next(void)
  * gpio_interrupt_dispatch
  * 
 */
-static void gpio_interrupt_dispatch(unsigned int pc)
+static bool gpio_interrupt_dispatch(unsigned int pc)
 {
     int next_interrupt = gpio_interrupts_get_next();
     if (next_interrupt < GPIO_PIN_COUNT)
     {
         handlers[next_interrupt].fn(pc);
+        return true;
     }
+    return false;
 }
 
 /*
@@ -110,8 +112,7 @@ bool gpio_default_handler(unsigned int pc)
 void gpio_interrupts_init(void)
 {
     gpio_interrupts_disable();
-    //gpio_interrupts_enable();
-    interrupts_register_handler(INTERRUPTS_GPIO3, (handler_fn_t)gpio_interrupt_dispatch);
+    interrupts_register_handler(INTERRUPTS_GPIO3, gpio_interrupt_dispatch);
 
     for (int i = 0; i < GPIO_PIN_COUNT; i++)
     {
