@@ -37,7 +37,7 @@ OBJECTS = $(addprefix build/obj/, $(MY_MODULES) start.o cstart.o)
 CFLAGS_EXTRA = -Werror
 CFLAGS 	= -Iinclude -I$(CS107E)/include -Og -g -Wall -std=c99 -ffreestanding $(CFLAGS_EXTRA)
 LDFLAGS	= -nostdlib -T src/boot/memmap -L$(CS107E)/lib
-LDLIBS 	= -lpi -lgcc -lref_pi
+LDLIBS 	= -lpi -lref_pi -lgcc 
 
 # Search for .c and .s files in the src directory's subdirectories.
 # https://www.cmcrossroads.com/article/basics-vpath-and-vpath

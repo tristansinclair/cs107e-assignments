@@ -1,30 +1,34 @@
 #include "fb.h"
 #include "mailbox.h"
 
-typedef struct {
-    unsigned int width;       // width of the physical screen
-    unsigned int height;      // height of the physical screen
+typedef struct
+{
+    unsigned int width;          // width of the physical screen
+    unsigned int height;         // height of the physical screen
     unsigned int virtual_width;  // width of the virtual framebuffer
     unsigned int virtual_height; // height of the virtual framebuffer
-    unsigned int pitch;       // number of bytes per row
-    unsigned int bit_depth;   // number of bits per pixel
-    unsigned int x_offset;    // x of the upper left corner of the virtual fb
-    unsigned int y_offset;    // y of the upper left corner of the virtual fb
-    unsigned int framebuffer; // pointer to the start of the framebuffer
-    unsigned int total_bytes; // total number of bytes in the framebuffer
+    unsigned int pitch;          // number of bytes per row
+    unsigned int bit_depth;      // number of bits per pixel
+    unsigned int x_offset;       // x of the upper left corner of the virtual fb
+    unsigned int y_offset;       // y of the upper left corner of the virtual fb
+    unsigned int framebuffer;    // pointer to the start of the framebuffer
+    unsigned int total_bytes;    // total number of bytes in the framebuffer
 } fb_config_t;
 
 // fb is volatile because the GPU will write to it
-static volatile fb_config_t fb __attribute__ ((aligned(16)));
+static volatile fb_config_t fb __attribute__((aligned(16)));
+
+static fb_mode_t _mode;
 
 void fb_init(unsigned int width, unsigned int height, unsigned int depth_in_bytes, fb_mode_t mode)
 {
-    // TODO: extend this function to support double-buffered mode
-
     fb.width = width;
-    fb.virtual_width = width;
     fb.height = height;
-    fb.virtual_height = height;
+
+    fb.virtual_height = mode == FB_SINGLEBUFFER ? height : height * 2;
+    fb.virtual_width = width;
+    _mode = mode;
+
     fb.bit_depth = depth_in_bytes * 8; // convert number of bytes to number of bits
     fb.x_offset = 0;
     fb.y_offset = 0;
@@ -41,39 +45,42 @@ void fb_init(unsigned int width, unsigned int height, unsigned int depth_in_byte
     mailbox_read(MAILBOX_FRAMEBUFFER);
 }
 
-
 void fb_swap_buffer(void)
 {
-    // TODO: implement this function
+    if (_mode == FB_DOUBLEBUFFER)
+    {
+        fb.y_offset = fb.height - fb.y_offset;
+        mailbox_write(MAILBOX_FRAMEBUFFER, (unsigned)&fb);
+        mailbox_read(MAILBOX_FRAMEBUFFER);
+    }
 }
 
-void* fb_get_draw_buffer(void)
+void *fb_get_draw_buffer(void)
 {
-    // TODO: implement this function
-    return 0;
+    if (_mode == FB_SINGLEBUFFER)
+    {
+        return (void *)fb.framebuffer;
+    }
+
+    return fb.y_offset == 0 ? (void *)((char *)fb.framebuffer + (fb.total_bytes / 2)) : (void *)fb.framebuffer;
 }
 
 unsigned int fb_get_width(void)
 {
-    // TODO: implement this function
-    return 0;
+    return fb.width;
 }
 
 unsigned int fb_get_height(void)
 {
-    // TODO: implement this function
-    return 0;
+    return fb.height;
 }
 
 unsigned int fb_get_depth(void)
 {
-    // TODO: implement this function
-    return 0;
+    return fb.bit_depth / 8;
 }
 
 unsigned int fb_get_pitch(void)
 {
-    // TODO: implement this function
-    return 0;
+    return fb.pitch;
 }
-

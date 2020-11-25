@@ -1,5 +1,82 @@
 #include <stdbool.h>
 #include "gpio_interrupts.h"
+#include "gpio.h"
+#include "assert.h"
+#include "interrupts.h"
+
+/*
+ * Notes:
+ * Throw away scancode 
+ * clear the event if infinite loop
+ * 
+ */
+#define GPIO_PIN_COUNT 54
+
+struct gpio
+{
+    unsigned int FSEL[6];
+    unsigned int reservedA;
+    unsigned int SET[2];
+    unsigned int reservedB;
+    unsigned int CLR[2];
+    unsigned int reservedC;
+    unsigned int LEV[2];
+    unsigned int reservedD;
+    unsigned int EDS[2];
+};
+
+extern volatile struct gpio *gpio;
+
+/**
+ * handlers
+ * stores an address of a function to call for gpio pins
+ * index corresponds to gpio pin - 1
+*/
+static struct
+{
+    handler_fn_t fn;
+} handlers[GPIO_PIN_COUNT];
+
+
+extern unsigned int count_leading_zeroes(unsigned int val); // Defined in assembly
+
+/**
+ * gpio_interrupts_get_next
+ * returns the index of gpio pin which triggered an interrupt
+*/
+static unsigned int gpio_interrupts_get_next(void)
+{
+    unsigned int eds0_zeroes = count_leading_zeroes(gpio->EDS[0]);
+    unsigned int eds1_zeroes = count_leading_zeroes(gpio->EDS[1]);
+
+    if (eds0_zeroes != 32)
+    {
+        return 31 - eds0_zeroes;
+    }
+    else if (eds1_zeroes != 32)
+    {
+        return 63 - eds1_zeroes;
+    }
+    else
+    {
+        return INTERRUPTS_NONE;
+    }
+}
+
+/**
+ * gpio_interrupt_dispatch
+ * 
+*/
+static bool gpio_interrupt_dispatch(unsigned int pc)
+{
+    int next_interrupt = gpio_interrupts_get_next();
+    if (next_interrupt < GPIO_PIN_COUNT)
+    {
+        handlers[next_interrupt].fn(pc);
+        return true;
+    }
+    return false;
+}
 
 /*
  * Module to configure GPIO interrupts for Raspberry Pi.
@@ -14,7 +91,10 @@
  * Last update:   May 2020
  */
 
-bool gpio_default_handler(unsigned int pc) { return false; }
+bool gpio_default_handler(unsigned int pc)
+{
+    return false;
+}
 
 /*
  * `gpio_interrupts_init`
@@ -28,8 +108,15 @@ bool gpio_default_handler(unsigned int pc) { return false; }
  * Disables GPIO interrupts if they were previously enabled.
  * 
  */
-void gpio_interrupts_init(void) 
+void gpio_interrupts_init(void)
 {
+    gpio_interrupts_disable();
+    interrupts_register_handler(INTERRUPTS_GPIO3, gpio_interrupt_dispatch);
+
+    for (int i = 0; i < GPIO_PIN_COUNT; i++)
+    {
+        handlers[i].fn =  0; // gpio_default_handler((handler_fn_t)0);
+    }
 }
 
 /*
@@ -37,8 +124,9 @@ void gpio_interrupts_init(void)
  *
  * Enables GPIO interrupts.
  */
-void gpio_interrupts_enable(void) 
+void gpio_interrupts_enable(void)
 {
+    interrupts_enable_source(INTERRUPTS_GPIO3); // enable interrupts on all GPIO Pins
 }
 
 /*
@@ -46,8 +134,9 @@ void gpio_interrupts_enable(void)
  *
  * Disables GPIO interrupts.
  */
-void gpio_interrupts_disable(void) 
+void gpio_interrupts_disable(void)
 {
+    interrupts_disable_source(INTERRUPTS_GPIO3); // enable interrupts on all GPIO Pins
 }
 
 /* 
@@ -62,7 +151,10 @@ void gpio_interrupts_disable(void)
  * Asserts if failed to install handler (e.g., the pin is invalid).
  * Pins are defined in `gpio.h`.
  */
-handler_fn_t gpio_interrupts_register_handler(unsigned int pin, handler_fn_t fn) 
+handler_fn_t gpio_interrupts_register_handler(unsigned int pin, handler_fn_t fn)
 {
-}
+    assert(GPIO_PIN_FIRST <= pin && pin <= GPIO_PIN_LAST);
 
+    handlers[pin].fn = fn;
+    return handlers[pin].fn;
+}

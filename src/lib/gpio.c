@@ -10,6 +10,8 @@ struct gpio
     unsigned int CLR[2];
     unsigned int reservedC;
     unsigned int LEV[2];
+    unsigned int reservedD;
+    unsigned int EDS[2];
 };
 
 volatile struct gpio *gpio = (struct gpio *)0x20200000; // Point to beginning of struct
@@ -20,9 +22,14 @@ void gpio_init(void)
 
 void gpio_set_function(unsigned int pin, unsigned int function)
 {
-    if (pin > 54 || pin < 0)
+    if (pin > 54)
     {
         return; // no need to do anything so just leave
+    }
+
+    if (function > GPIO_FUNC_ALT3 || function < GPIO_FUNC_INPUT)
+    {
+        return; // function isn't valid
     }
     
     unsigned int register_num = (pin / 10);                // which GPIO config register do we need?
@@ -39,7 +46,7 @@ void gpio_set_function(unsigned int pin, unsigned int function)
 
 unsigned int gpio_get_function(unsigned int pin)
 {
-    if (pin > 54 || pin < 0)
+    if (pin > 54)
     {
         return GPIO_INVALID_REQUEST;
     }
@@ -55,17 +62,17 @@ unsigned int gpio_get_function(unsigned int pin)
 
 void gpio_set_input(unsigned int pin)
 {
-    gpio_set_function(pin, 0);
+    gpio_set_function(pin, GPIO_FUNC_INPUT);
 }
 
 void gpio_set_output(unsigned int pin)
 {
-    gpio_set_function(pin, 1);
+    gpio_set_function(pin, GPIO_FUNC_OUTPUT);
 }
 
 void gpio_write(unsigned int pin, unsigned int value)
 {
-    if (pin > 54 || pin < 0)
+    if (pin > 54)
     {
         return; // no need to do anything so just leave
     }
@@ -87,7 +94,7 @@ void gpio_write(unsigned int pin, unsigned int value)
 
 unsigned int gpio_read(unsigned int pin)
 {
-    if (pin > 54 || pin < 0)
+    if (pin > 54)
     {
         return GPIO_INVALID_REQUEST;
     }

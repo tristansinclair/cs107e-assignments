@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "cstddef": "c",
-        "initializer_list": "c",
-        "type_traits": "c"
-    }
-}
