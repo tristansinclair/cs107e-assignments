@@ -10,3 +10,7 @@
 .logs/*
 include/test-framework.h
 Makefile
+.vscode
+a.out
+~
+~.pub
