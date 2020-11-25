@@ -28,12 +28,9 @@ static unsigned DATA = GPIO_PIN4;
 static unsigned int bit = 0;
 static unsigned int bit_counter = 0;
 static unsigned char scancode = 0;
-static unsigned int parity_bit = 0;
 static unsigned int timer = 0;
 static int split = 0;
-static bool fresh_timer = true;
-
-static int test_parity = 0;
+static bool first_bit = true;
 
 rb_t *rb;
 
@@ -115,8 +112,7 @@ static void reset_scancode(void)
 {
     scancode = 0;
     bit_counter = 0;
-    parity_bit = 0;
-    fresh_timer = true;
+    first_bit = true;
 }
 
 static bool read_bit(unsigned int pc)
@@ -126,10 +122,10 @@ static bool read_bit(unsigned int pc)
         return false;
     }
 
-    split = timer_get_ticks() - timer; // split in between read_bit calls
-    timer = timer_get_ticks();         // when read_bit is called, get the current clock
-
-    if (fresh_timer == false && split > 3000) // if this is a new scancode we're reading, check the split
+    // timing of falling edge to ensure no more than 3ms occurs between clock edges
+    split = timer_get_ticks() - timer;      // split in between read_bit calls
+    timer = timer_get_ticks();              // when read_bit is called, get the current clock
+    if (first_bit == false && split > 3000) // if this isn't the first bit we're reading, check the split
     {
         reset_scancode();
         return false;
@@ -145,7 +141,7 @@ static bool read_bit(unsigned int pc)
         if (bit == 0)
         {
             bit_counter++;
-            fresh_timer = false;
+            first_bit = false;
             break;
         }
         else
@@ -159,24 +155,15 @@ static bool read_bit(unsigned int pc)
     case 3:
     case 4:
     case 5:
-        test_parity++;
     case 6:
     case 7:
     case 8:
         scancode |= (bit << (bit_counter - 1));
         bit_counter++;
         break;
-
+    // parity bit
     case 9:
-        parity_bit = bit;
-
-        // Intentionally drops the 4th char typed!!
-        if (test_parity > 40 && test_parity < 70)
-        {
-            parity_bit++; // throw parity bit off
-        }
-
-        if ((has_odd_parity(scancode) + parity_bit) % 2 == 0)
+        if ((has_odd_parity(scancode) + bit) % 2 == 0)
         {
             reset_scancode();
             break;
@@ -184,8 +171,8 @@ static bool read_bit(unsigned int pc)
 
         bit_counter++;
         break;
+    // stop bit
     case 10:
-        // check stop bit == 1
         if (bit == 0)
         {
             reset_scancode();
@@ -217,9 +204,9 @@ void keyboard_init(unsigned int clock_gpio, unsigned int data_gpio)
     gpio_set_input(DATA);
     gpio_set_pullup(DATA);
 
+    // setup gpio interrupts
     gpio_interrupts_init();
     gpio_interrupts_enable();
-    // enables gpio interrupts
     gpio_enable_event_detection(CLK, GPIO_DETECT_FALLING_EDGE);    // enables event detection on CLK line for falling edge
     gpio_interrupts_register_handler(CLK, (handler_fn_t)read_bit); // registers the read_bit function to be called when CLK is triggered
 
