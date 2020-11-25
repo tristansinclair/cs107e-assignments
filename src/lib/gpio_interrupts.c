@@ -26,7 +26,6 @@ struct gpio
 };
 
 extern volatile struct gpio *gpio;
-//volatile struct gpio *gpio = (struct gpio2 *)0x20200000; // Point to beginning of struct
 
 /**
  * handlers
