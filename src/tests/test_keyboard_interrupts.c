@@ -81,7 +81,7 @@ static bool button_press_2(unsigned int pc)
     return false;
 }
 
-void test_gpio_interrupts(void)
+void test_multiple_gpio_interrupts(void)
 {
     // enable gpio stuff
     gpio_set_input(BUTTON);
@@ -128,9 +128,9 @@ void main(void)
 
     keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
 
-    //test_count_leading_zeros();
+    test_count_leading_zeros();
 
-    //test_gpio_interrupts();
+    test_multiple_gpio_interrupts();
 
     test_clock_events(); // wait 10 seconds for clock_edge handler to report clock edges
     test_read_delay();   // what happens to keys typed while main program blocked in delay?
