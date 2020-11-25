@@ -25,17 +25,8 @@ void fb_init(unsigned int width, unsigned int height, unsigned int depth_in_byte
     fb.width = width;
     fb.height = height;
 
-    if (mode == FB_SINGLEBUFFER) //  allow double buffer support
-    {
-        fb.virtual_height = height;
-        fb.virtual_width = width;
-    }
-    else
-    {
-        fb.virtual_height = height * 2;
-        fb.virtual_width = width;
-    }
-    //fb.virtual_width = width;
+    fb.virtual_height = mode == FB_SINGLEBUFFER ? height : height * 2;
+    fb.virtual_width = width;
     _mode = mode;
 
     fb.bit_depth = depth_in_bytes * 8; // convert number of bytes to number of bits
@@ -56,9 +47,12 @@ void fb_init(unsigned int width, unsigned int height, unsigned int depth_in_byte
 
 void fb_swap_buffer(void)
 {
-    fb.y_offset = fb.y_offset == 0 ? fb.height : 0; // if y_offset = 0 chnage to fb.virtual_height
-    mailbox_write(MAILBOX_FRAMEBUFFER, (unsigned)&fb);
-    mailbox_read(MAILBOX_FRAMEBUFFER);
+    if (_mode == FB_DOUBLEBUFFER)
+    {
+        fb.y_offset = fb.height - fb.y_offset;
+        mailbox_write(MAILBOX_FRAMEBUFFER, (unsigned)&fb);
+        mailbox_read(MAILBOX_FRAMEBUFFER);
+    }
 }
 
 void *fb_get_draw_buffer(void)

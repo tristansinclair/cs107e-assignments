@@ -58,10 +58,19 @@ int cmd_help(int argc, const char *argv[])
     }
     else
     {
+        // char buf[1024];
+        // memset(buf, 0x0, 1024);
+
         for (int i = 0; i < COMMAND_COUNT; i++)
         {
+            // strlcat(buf, commands[i].name, 1024);
+            // strlcat(buf, "   ", 1024);
+            // strlcat(buf, commands[i].description, 1024);
+            // strlcat(buf, "\n", 1024);
+
             shell_printf("%s    %s\n", commands[i].name, commands[i].description);
         }
+        //shell_printf(buf);
         return 0;
     }
 }

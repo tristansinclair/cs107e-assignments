@@ -28,13 +28,7 @@ unsigned int gl_get_height(void)
 color_t gl_color(unsigned char r, unsigned char g, unsigned char b)
 {
     // b g r a
-    color_t color = 0;
-    color |= (0xff << 24); // brightness
-    color |= (r << 16);
-    color |= (g << 8);
-    color |= b;
-
-    return color;
+    return 0xff << 24 | r << 16 | g << 8 | b;
 }
 
 void gl_clear(color_t c)
