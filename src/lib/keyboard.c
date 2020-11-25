@@ -28,8 +28,11 @@ static unsigned int bit = 0;
 static unsigned int bit_counter = 0;
 static unsigned char scancode = 0;
 static unsigned int parity_bit = 0;
-// static unsigned int timer = 0;
-// static int split = 0;
+static unsigned int timer = 0;
+static int split = 0;
+static bool fresh_timer = true;
+
+static int timer_test = 0;
 
 rb_t *rb;
 
@@ -106,19 +109,22 @@ static void ps2_write(unsigned char command)
 
 static bool read_bit(unsigned int pc)
 {
-    // split = timer_get_ticks() - timer;
-    // if (split > 3000) // throw away scancodes that take too long to read
-    // {
-    //     bit_counter = 0;
-    //     scancode = 0;
-    //     return false;
-    // }
-    // timer = timer_get_ticks();
-
     if (!gpio_check_and_clear_event(CLK)) // check and clear event
     {
         return false;
     }
+
+    split = timer_get_ticks() - timer; // split in between read_bit calls
+    timer = timer_get_ticks();         // when read_bit is called, get the current clock
+
+    if (fresh_timer == false && split > 3000) // if this is a new scancode we're reading, check the split
+    {
+        bit_counter = 0;
+        scancode = 0;
+        fresh_timer = true;
+        return false;
+    }
+    timer = timer_get_ticks(); // start timer for next clock line
 
     bit = gpio_read(DATA);
 
@@ -129,6 +135,7 @@ static bool read_bit(unsigned int pc)
         if (bit == 0)
         {
             bit_counter++;
+            fresh_timer = false;
             break;
         }
         else
@@ -140,8 +147,13 @@ static bool read_bit(unsigned int pc)
     case 1:
     case 2:
     case 3:
+        timer_test++;
     case 4:
     case 5:
+        if (timer_test == 56) // will force a dropped scancode for the 7th entry
+        {
+            timer_delay_ms(5);
+        }
     case 6:
     case 7:
     case 8:
@@ -180,6 +192,7 @@ static bool read_bit(unsigned int pc)
         rb_enqueue(rb, scancode);
         bit_counter = 0;
         scancode = 0;
+        fresh_timer = true;
         return true;
     }
 
