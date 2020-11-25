@@ -83,6 +83,11 @@ static bool button_press_2(unsigned int pc)
 
 void test_multiple_gpio_interrupts(void)
 {
+    printf("\n\nConfigured two buttons to gpio 20 and 21 for pullup.\n");
+    printf("Press either two buttons. 20 will interrupt and print for button1.\n");
+    printf("21 will interrupt and print for button2.\n");
+    printf("Continue until button1 == 25, then the test will stop.\n");
+
     // enable gpio stuff
     gpio_set_input(BUTTON);
     gpio_set_pullup(BUTTON);
@@ -99,12 +104,14 @@ void test_multiple_gpio_interrupts(void)
     gpio_interrupts_register_handler(BUTTON, button_press);
     gpio_interrupts_register_handler(BUTTON2, button_press_2);
 
+
     // this will spin while counter is < 25 and do nothing
     // a button press will interrupt, printf, and increment
     while (counter < 25)
     {
     }
 
+    timer_delay(2);
     printf("Successful GPIO Interrupt Test!!\n");
 }
 
@@ -126,11 +133,10 @@ void main(void)
     interrupts_init();
     interrupts_global_enable();
 
+    // test_count_leading_zeros();
+    // test_multiple_gpio_interrupts();
+
     keyboard_init(KEYBOARD_CLOCK, KEYBOARD_DATA);
-
-    test_count_leading_zeros();
-
-    test_multiple_gpio_interrupts();
 
     test_clock_events(); // wait 10 seconds for clock_edge handler to report clock edges
     test_read_delay();   // what happens to keys typed while main program blocked in delay?
