@@ -34,17 +34,17 @@
 
 ## Assignment 5: keyboard and shell
 
-#### Basic functionality: <!--assign5-basic-->
-#### Extension functionality: <!--assign5-extension-->
-#### Code quality: <!--assign5-style-->
-#### Test quality: <!--assign5-test-->
+#### Basic functionality: `9.5/10.0`<!--assign5-basic-->
+#### Extension functionality: `4.25/5.0`<!--assign5-extension-->
+#### Code quality: `+`<!--assign5-style-->
+#### Test quality: `ok`<!--assign5-test-->
 
 ## Assignment 6: fb, gl, and console
 
-####  Basic functionality: <!--assign6-basic-->
-####  Extension functionality: <!--assign6-extension-->
-####  Code quality: <!--assign6-style-->
-####  Test quality: <!--assign6-test-->
+####  Basic functionality: `9.0/10.0`<!--assign6-basic-->
+####  Extension functionality: `5.0/5.0`<!--assign6-extension-->
+####  Code quality: `ok`<!--assign6-style-->
+####  Test quality: `+`<!--assign6-test-->
 
 ## Assignment 7: interrupts
 
