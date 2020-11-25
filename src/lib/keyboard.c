@@ -24,6 +24,7 @@ enum
 static unsigned CLK = GPIO_PIN3;
 static unsigned DATA = GPIO_PIN4;
 
+// all for read_bit
 static unsigned int bit = 0;
 static unsigned int bit_counter = 0;
 static unsigned char scancode = 0;
@@ -32,7 +33,7 @@ static unsigned int timer = 0;
 static int split = 0;
 static bool fresh_timer = true;
 
-static int timer_test = 0;
+static int test_parity = 0;
 
 rb_t *rb;
 
@@ -46,8 +47,11 @@ static void wait_for_falling_clock_edge(void)
     }
 }
 
-// from Peter
-// returns the number of 1s in a bit
+/** 
+ * has_odd_parity
+ * from Peter
+ * returns the number of 1s in a bit
+*/
 static int has_odd_parity(unsigned char code)
 {
     unsigned int sum = 0;
@@ -107,6 +111,14 @@ static void ps2_write(unsigned char command)
     //wait_for_falling_clock_edge();
 }
 
+static void reset_scancode(void)
+{
+    scancode = 0;
+    bit_counter = 0;
+    parity_bit = 0;
+    fresh_timer = true;
+}
+
 static bool read_bit(unsigned int pc)
 {
     if (!gpio_check_and_clear_event(CLK)) // check and clear event
@@ -119,9 +131,7 @@ static bool read_bit(unsigned int pc)
 
     if (fresh_timer == false && split > 3000) // if this is a new scancode we're reading, check the split
     {
-        bit_counter = 0;
-        scancode = 0;
-        fresh_timer = true;
+        reset_scancode();
         return false;
     }
     timer = timer_get_ticks(); // start timer for next clock line
@@ -147,52 +157,48 @@ static bool read_bit(unsigned int pc)
     case 1:
     case 2:
     case 3:
-        timer_test++;
     case 4:
     case 5:
-        if (timer_test == 56) // will force a dropped scancode for the 7th entry
-        {
-            timer_delay_ms(5);
-        }
+        test_parity++;
     case 6:
     case 7:
     case 8:
-        scancode |= (gpio_read(DATA) << (bit_counter - 1));
+        scancode |= (bit << (bit_counter - 1));
         bit_counter++;
         break;
 
     case 9:
         parity_bit = bit;
+
+        // Intentionally drops the 4th char typed!!
+        if (test_parity > 40 && test_parity < 70)
+        {
+            parity_bit++; // throw parity bit off
+        }
+
+        if ((has_odd_parity(scancode) + parity_bit) % 2 == 0)
+        {
+            reset_scancode();
+            break;
+        }
+
         bit_counter++;
         break;
     case 10:
-        if (bit == 1)
+        // check stop bit == 1
+        if (bit == 0)
         {
-            //bit_counter++;
+            reset_scancode();
             break;
         }
-        else
-        {
-            scancode = 0;
-            bit_counter = 0;
-            parity_bit = 0;
-            break;
-        }
-        if ((has_odd_parity(scancode) + parity_bit) % 2 != 1)
-        {
-            bit_counter = 0;
-            scancode = 0;
-            parity_bit = 0;
-            break;
-        }
+
+        break;
     }
 
     if (bit_counter == 10)
     {
         rb_enqueue(rb, scancode);
-        bit_counter = 0;
-        scancode = 0;
-        fresh_timer = true;
+        reset_scancode();
         return true;
     }
 
