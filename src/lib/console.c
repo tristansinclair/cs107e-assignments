@@ -5,11 +5,15 @@
 #include "printf.h"
 #include "strings.h"
 #include "malloc.h"
+#include "fb.h"
 
-static void process_char(char ch);
+struct location
+{
+    unsigned int cur_x;
+    unsigned int cur_y;
+};
 
-static unsigned int cur_x;
-static unsigned int cur_y;
+static struct location location = {0, 0};
 
 static unsigned int MAX_LINES; // max lines of the display
 static unsigned int MAX_WIDTH; // pixels of display
@@ -33,6 +37,8 @@ static unsigned int char_count = 0;     // current chars in a line
 #define TEXT_COLOR 0xFF00FF00 // GL_GREEN
 //#define LINE_PADDING 3 // 2 pixels
 
+static void process_char(char ch);
+
 void console_init(unsigned int nrows, unsigned int ncols)
 {
     FONT_WIDTH = font_get_width();
@@ -41,12 +47,12 @@ void console_init(unsigned int nrows, unsigned int ncols)
     MAX_WIDTH = ncols * (FONT_WIDTH);
     MAX_HEIGHT = nrows * (FONT_HEIGHT);
 
-    cur_x = 0;
-    cur_y = 0;
+    location.cur_x = 0;
+    location.cur_y = 0;
 
     MAX_CHARS_PER_LINE = ncols;
     MAX_LINES = nrows;
-    display_history = malloc((MAX_LINES)*MAX_CHARS);
+    display_history = malloc(MAX_LINES * (MAX_CHARS_PER_LINE + 1));
     cur_char_history = display_history;
 
     gl_init(MAX_WIDTH, MAX_HEIGHT, GL_DOUBLEBUFFER);
@@ -110,14 +116,14 @@ static void shift_up(void)
 
     int temp_tail = tail + 1;
 
-    char *shift_ptr = display_history + (temp_tail * MAX_CHARS);
+    char *shift_ptr = display_history + (temp_tail * MAX_CHARS_PER_LINE);
 
     for (int i = 0; i < MAX_LINES - 1; i++)
     {
         gl_draw_string(0, new_y, shift_ptr, TEXT_COLOR);
         new_y += FONT_HEIGHT;
         temp_tail = (temp_tail + 1) % MAX_LINES;
-        shift_ptr = display_history + (MAX_CHARS * temp_tail);
+        shift_ptr = display_history + (MAX_CHARS_PER_LINE * temp_tail);
     }
 
     gl_swap_buffer(); // display shifted buffer
@@ -127,31 +133,35 @@ static void shift_up(void)
 
     new_y = 0;
     temp_tail = tail + 1;
-    shift_ptr = display_history + (temp_tail * MAX_CHARS);
+    shift_ptr = display_history + (temp_tail * MAX_CHARS_PER_LINE);
 
     for (int i = 0; i < MAX_LINES - 1; i++)
     {
         gl_draw_string(0, new_y, shift_ptr, TEXT_COLOR);
         new_y += FONT_HEIGHT;
         temp_tail = (temp_tail + 1) % MAX_LINES;
-        shift_ptr = display_history + (MAX_CHARS * temp_tail);
+        shift_ptr = display_history + (MAX_CHARS_PER_LINE * temp_tail);
     }
 
-    cur_char_history = display_history + (tail * MAX_CHARS);
+    cur_char_history = display_history + (tail * MAX_CHARS_PER_LINE);
     char_count = 0;
 
-    cur_x = 0; // move x back to start
+    location.cur_x = 0; // move x back to start
 }
 
+/*
+ * next_line "\n"
+ * used for "\n" or when a newline is needed
+ */
 static void next_line(void)
 {
-    cur_y += FONT_HEIGHT;
-    cur_x = 0;
+    location.cur_y += FONT_HEIGHT;
+    location.cur_x = 0;
 
     line_count++;
     char_count = 0;
     tail = (tail + 1) % MAX_LINES;
-    cur_char_history = display_history + (tail * MAX_CHARS);
+    cur_char_history = display_history + (tail * MAX_CHARS_PER_LINE);
 }
 
 /*
@@ -166,16 +176,16 @@ static void standard_char(char ch)
     *cur_char_history = '\0';
 
     // print it to the hidden buffer
-    gl_draw_char(cur_x, cur_y, ch, TEXT_COLOR);
-    gl_swap_buffer();                           // display
-    gl_draw_char(cur_x, cur_y, ch, TEXT_COLOR); // copy to hidden buffer
+    gl_draw_char(location.cur_x, location.cur_y, ch, TEXT_COLOR);
+    gl_swap_buffer();                                             // display
+    gl_draw_char(location.cur_x, location.cur_y, ch, TEXT_COLOR); // copy to hidden buffer
 
-    cur_x += FONT_WIDTH;
+    location.cur_x += FONT_WIDTH;
     char_count++;
 }
 
 /*
- * backspace
+ * backspace "\b"
  * handles backspace key
  * currently does not support multi line backspace
  */
@@ -185,21 +195,21 @@ static void backspace(void)
     *cur_char_history = '\0';
     char_count--;
 
-    cur_x -= FONT_WIDTH;
-    gl_draw_rect(cur_x, cur_y, FONT_WIDTH, FONT_HEIGHT, 0x0);
+    location.cur_x -= FONT_WIDTH;
+    gl_draw_rect(location.cur_x, location.cur_y, FONT_WIDTH, FONT_HEIGHT, 0x0);
     gl_swap_buffer();
-    gl_draw_rect(cur_x, cur_y, FONT_WIDTH, FONT_HEIGHT, 0x0);
+    gl_draw_rect(location.cur_x, location.cur_y, FONT_WIDTH, FONT_HEIGHT, 0x0);
 }
 
 /*
- * formfeed
+ * formfeed "\f"
  * complete reset of the display and console
  */
 static void formfeed(void)
 {
     // reset variables
-    cur_x = 0;
-    cur_y = 0;
+    location.cur_x = 0;
+    location.cur_y = 0;
     tail = 0;
     line_count = 0;
     char_count = 0;
@@ -237,7 +247,7 @@ static void process_char(char ch)
         formfeed();
         break;
     case '\r':
-        cur_x = 0;
+        location.cur_x = 0;
         break;
     default:
         // handle wrap/shift
